@@ -819,16 +819,16 @@ def target_xy(focus=None):
         event = pygame.event.wait()
         if event.type == pygame.KEYDOWN:
             xy = (0,0)
-            if   event.key == pygame.K_KP9: xy = (1, -1)
-            elif event.key == pygame.K_KP8: xy = (0, -1)
-            elif event.key == pygame.K_KP7: xy = (-1, -1)
-            elif event.key == pygame.K_KP6: xy = (1, 0)
-            elif event.key == pygame.K_KP4: xy = (-1, 0)
-            elif event.key == pygame.K_KP3: xy = (1, 1)
-            elif event.key == pygame.K_KP2: xy = (0, 1)
-            elif event.key == pygame.K_KP1: xy = (-1, 1)
+            if   event.key == pygame.K_y: xy = (1, -1)
+            elif event.key == pygame.K_k: xy = (0, -1)
+            elif event.key == pygame.K_y: xy = (-1, -1)
+            elif event.key == pygame.K_l: xy = (1, 0)
+            elif event.key == pygame.K_h: xy = (-1, 0)
+            elif event.key == pygame.K_n: xy = (1, 1)
+            elif event.key == pygame.K_j: xy = (0, 1)
+            elif event.key == pygame.K_b: xy = (-1, 1)
             (xy_tile.x, xy_tile.y) = (xy_tile.x+xy[0], xy_tile.y+xy[1])
-        elif event.key == pygame.K_KP5:
+        elif event.key == pygame.K_SPACE:
             (ttile_x, ttile_y) = (xy_tile.x, xy_tile.y)
             objects.remove(xy_tile)
             game_state = 'playing'
@@ -1266,7 +1266,7 @@ def take_turn_player():
     if event.type == pygame.KEYDOWN:
 
         """ GENERAL COMMANDS (DESPITE PLAYING / DEAD) """
-        if event.key == pygame.K_ESCAPE: 
+        if event.key == pygame.K_ESCAPE:
             if game_state == 'waiting': game_state = 'playing'
             choice = x_menu(300, 'Do you wish to save and return to menu?', ['Yes', 'No'], '1')
             if choice == 0:
@@ -1280,15 +1280,14 @@ def take_turn_player():
             act = None
                 
             """KP_KEYS = MOVEMENT """
-            if   event.key == pygame.K_KP9: player_move_or_attack(1, -1)
-            elif event.key == pygame.K_KP8: player_move_or_attack(0, -1)
-            elif event.key == pygame.K_KP7: player_move_or_attack(-1, -1)
-            elif event.key == pygame.K_KP6: player_move_or_attack(1, 0)
-            elif event.key == pygame.K_KP5: player_move_or_attack(0, 0)
-            elif event.key == pygame.K_KP4: player_move_or_attack(-1, 0)
-            elif event.key == pygame.K_KP3: player_move_or_attack(1, 1)
-            elif event.key == pygame.K_KP2: player_move_or_attack(0, 1)
-            elif event.key == pygame.K_KP1: player_move_or_attack(-1, 1)
+            if   event.key == pygame.K_u: player_move_or_attack(1, -1)
+            elif event.key == pygame.K_k: player_move_or_attack(0, -1)
+            elif event.key == pygame.K_y: player_move_or_attack(-1, -1)
+            elif event.key == pygame.K_l: player_move_or_attack(1, 0)
+            elif event.key == pygame.K_h: player_move_or_attack(-1, 0)
+            elif event.key == pygame.K_n: player_move_or_attack(1, 1)
+            elif event.key == pygame.K_j: player_move_or_attack(0, 1)
+            elif event.key == pygame.K_b: player_move_or_attack(-1, 1)
 
             #""" A-Z """
             elif event.key == pygame.K_r: act = player_action_remove()
