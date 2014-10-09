@@ -1359,7 +1359,7 @@ def save_game():
 def load_game():
     #open the previously saved shelve and load the game data
     global map, objects, player, game_msgs, game_state, stairsup, dungeon_level
-    options = [game for game in os.listdir('save/') if game != '.graveyard']
+    options = [game for game in os.listdir('save/') if game[0] != '.']
     if len(options) == 0: x_msgbox(300,30, (123,123,123), 'No savegames exist!')
     else: 
         index = x_menu(300,'Select savegame', options,'a')
