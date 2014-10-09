@@ -1,0 +1,47 @@
+IDEAS:
+ A speed system including haste
+  (to make things work smoothly player speed should be constant, some kind of monster_speed/player_speed)
+ Two-weapon fighting
+  (add some dnd-esque minus to ab)
+ More weapons (esp. heavy)
+ Add potions/random items to level
+ Add random starting items
+ Add 's'neak
+ Add some way to give +STR/DEX/CON/MAG
+ Make it possible to walk long distances
+ Make a '?'
+ Add some way to document and learn spells
+ Fix some nice spell visual effect
+ Re-add throw function
+ Add items to monsters
+ Add monster shout (make people nearby notice player)
+ Add a 'you're standing on...'
+ New class(es)!
+  cleric?
+
+SPELLS:
+-Level 1
+  Shield
+
+BUGS:
+ Dropped items do not show up (no sprite)
+ Monsters take 2 turns when player casting spells
+
+IMPROVE:
+ FOV-recompute is not impressive: 
+  +0.8 'magic number'
+  many tiles are checked over and over again
+ Def xrender_smap runs the 'for object in objects' over and over again
+ Def Graveyard should be remade a bit..
+  make it more fancy looking
+  make it work better for more corpses
+  ?add an autoremove for those outside the list
+ Add some kind of 'disrupt' for spellcasting, i.e. when they take damage while casting
+ No level cap to spell('magic missile'), should be capped at lvl9
+ MAYBE make monsters stop cheating when looking for player
+ MAYBE make monsters stop cheating when casting spells
+
+NEEDED MODELS
+ ALL ITEMS!
+ ? STAIRSDOWN
+ NEW MONSTER/BOSS
