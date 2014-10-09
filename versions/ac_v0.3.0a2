@@ -1,0 +1,1185 @@
+#! /usr/bin/env python
+import pygame
+from pygame.locals import *
+import math, textwrap, shelve, re, os, sys, random
+################################
+#   GRAPHICS, MAIN AND DEF     #####################################################################################################
+################################
+# Initials
+pygame.init()
+if pygame.font: 
+    font12 = pygame.font.SysFont('monospace',12, bold=True)
+    font15 = pygame.font.SysFont('monospace',15, bold=True)
+    font20 = pygame.font.SysFont('monospace',20, bold=True)
+pygame.display.set_caption('Ath Cliath')
+
+# Surfaces
+MON_WIDTH, MON_HEIGHT = 1360, 760
+mon = pygame.display.set_mode((MON_WIDTH, MON_HEIGHT)) 
+con = pygame.Surface((MON_WIDTH, MON_HEIGHT))
+MAP_WIDTH, MAP_HEIGHT = 1000, 1000 
+smap = pygame.Surface((MAP_WIDTH, MAP_HEIGHT)).convert()
+LEFTBAR_WIDTH, LEFTBAR_HEIGHT = 200, MON_HEIGHT 
+leftbar = pygame.Surface((LEFTBAR_WIDTH,LEFTBAR_HEIGHT)).convert()
+PANEL_WIDTH, PANEL_HEIGHT =     MON_WIDTH, 160
+panel = pygame.Surface((MON_WIDTH,PANEL_HEIGHT)).convert()
+RIGHTBAR_WIDTH, RIGHTBAR_HEIGHT=MON_WIDTH-LEFTBAR_WIDTH-700,MON_HEIGHT-PANEL_HEIGHT
+rightbar = pygame.Surface((RIGHTBAR_WIDTH,RIGHTBAR_HEIGHT)).convert()
+
+# COLORS
+BACKGROUND_COLOR = (0, 0, 0)
+INFO_COLOR = (100,100,100)
+INFO_COLOR2 = (200,200,200)
+
+
+# Images
+IMG_PLAYER = pygame.image.load('img/Ranger.png')
+IMG_A_CLOAK=IMG_A_LEATHERARMOR=IMG_A_CHAINMAIL=IMG_I_MAGICMARKER=IMG_I_DIGGING=IMG_W_DAGGER=IMG_W_SHORTSWORD=IMG_W_LONGSWORD=IMG_W_GREATSWORD=pygame.image.load('img/dead.png')
+
+def xgraphics():
+    xrender_fov()
+    xrender_smap()
+    xrender_leftbar()
+    xrender_rightbar()
+    xrender_panel()
+    pygame.display.update()
+def xrender_fov():
+    global fov_recompute, fov_map
+    if fov_recompute:
+        fov_recompute = False
+        for x in range(MAP_WIDTH/10):
+            for y in range(MAP_HEIGHT/10):
+                map[x][y].in_fov = False
+        fov_range = 10
+        for x in range(player.x-(fov_range-1), player.x+fov_range):
+            for y in range(player.y-(fov_range-1), player.y+fov_range):
+                if 0 < x < MAP_WIDTH/10 and 0 < y < MAP_HEIGHT/10:
+                    distance = (math.sqrt((x-player.x) ** 2 + (y-player.y) ** 2))
+                    if int(distance) in range(fov_range):
+                        # Even up to here
+                        if int(distance) > 0: dx, dy = (x-player.x)/distance, (y-player.y)/distance
+                        else: dx, dy = (x-player.x), (y-player.y)
+                        block_next = False
+                        for r in range(fov_range):
+                            if not block_next:
+                                x1,y1 = int(player.x+(dx*r)), int(player.y+(dy*r))
+                                if map[x1][y1].block_sight:
+                                    block_next = True
+                                    map[x1][y1].in_fov = True
+                                else: map[x1][y1].in_fov = True
+def xrender_smap():
+    for y in range(MAP_HEIGHT/10):
+        for x in range(MAP_WIDTH/10):
+            wall = map[x][y].block_sight
+            if map[x][y].in_fov:
+                if wall: smap.blit(IMG_WALL_LIGHT, (x*10,y*10))
+                else: smap.blit(IMG_FLOOR_LIGHT, (x*10,y*10))
+                map[x][y].explored = True
+            else:
+                if map[x][y].explored:
+                    if wall: smap.blit(IMG_WALL_DARK, (x*10,y*10))
+                    else: smap.blit(IMG_FLOOR_DARK, (x*10,y*10))
+    for object in objects: 
+        if object.blocks == False: object.xdraw()
+    for object in objects:
+        if object.blocks == True: object.xdraw()
+
+    BX, BY, BW, BH = player.x-35, player.y-30, 70, 60
+    if player.x < 35: BX = 0
+    elif player.x > MAP_WIDTH/10-35: BX = MAP_WIDTH/10-70
+    if player.y < 30: BY = 0
+    elif player.y > MAP_HEIGHT/10-30: BY = MAP_HEIGHT/10-60
+
+    mon.blit(smap, (0+LEFTBAR_WIDTH, 0), (BX*10,BY*10,BW*10,BH*10))
+    smap.fill(BACKGROUND_COLOR)
+def xrender_leftbar():
+    # LEFTBAR PART 1: PLAYER STATS
+    pft = player.fighter
+    clr_white = (255,255,255)
+    clr_other = (0,123,123)
+    y, x1, x2 = 10, 50, 150
+    textlist=[(player.name.capitalize(), clr_white, LEFTBAR_WIDTH/2, y),
+              ('Level:', clr_white, x1, y+30),('Race:', clr_white, x1, y+40),('Class:', clr_white, x1, y+50),
+              (str(pft.level), clr_other, x2, y+30),(pft.race, clr_other, x2, y+40),(pft.job, clr_other, x2, y+50),
+
+              ('STR:',clr_white, x1, y+70), ('DEX:',clr_white, x1, y+80), ('CON:',clr_white, x1, y+90), ('MAG:',clr_white, x1, y+100),
+              (str(pft.STR), clr_other, x2, y+70),(str(pft.DEX), clr_other, x2, y+80),(str(pft.CON), clr_other, x2, y+90),(str(pft.MAG), clr_other, x2, y+100),
+
+              ('BAB:', clr_white, x1, y+120), ('Attack:', clr_white, x1, y+130), ('Damage:', clr_white, x1, y+140), ('Defense:', clr_white, x1, y+150),
+              (str(pft.BAB), clr_other, x2, y+120),(str(pft.get_ab()), clr_other, x2, y+130), (str(pft.get_ac()), clr_other, x2, y+150)]
+
+    if player.fighter.helm.name != '':
+        textlist.append(('- Helm -', clr_other, LEFTBAR_WIDTH/2, y+200))
+        textlist.append((player.fighter.helm.name.capitalize(), clr_white, LEFTBAR_WIDTH/2, y+215))
+    if player.fighter.armor.name != '':
+        textlist.append(('- Armor -', clr_other, LEFTBAR_WIDTH/2, y+230))
+        textlist.append((player.fighter.armor.name.capitalize(), clr_white, LEFTBAR_WIDTH/2, y+245))
+    if player.fighter.rhand.name != '':
+        textlist.append(('- RHand -', clr_other, LEFTBAR_WIDTH/2, y+260))
+        textlist.append((player.fighter.rhand.name.capitalize(), clr_white, LEFTBAR_WIDTH/2, y+275))
+    if player.fighter.lhand.name != '':
+        textlist.append(('- LHand -', clr_other, LEFTBAR_WIDTH/2, y+290))
+        textlist.append((player.fighter.lhand.name.capitalize(), clr_white, LEFTBAR_WIDTH/2, y+305))
+
+    for (text, color, x, y) in textlist:
+        leftbar.blit((font12.render(text, True, color, BACKGROUND_COLOR)), (x-font12.size(text)[0]/2, y))
+
+
+    # LEFTBAR PART 2: HP + XP BARS
+    bars = [('Health', 340, player.fighter.hp, player.fighter.max_hp, (123, 0, 0), (255, 0, 0)),
+            ('XP', 370, player.fighter.xp, player.fighter.level*1000, (123, 0, 123), (255, 0, 255))]
+    for bar in bars:
+        bar_width = int(float(bar[2]) / bar[3] * LEFTBAR_WIDTH)
+        if bar_width > LEFTBAR_WIDTH: bar_width = LEFTBAR_WIDTH
+        pygame.draw.rect(leftbar, bar[4], (0, bar[1]+15, LEFTBAR_WIDTH, 10), 0)
+        if bar_width > 0:pygame.draw.rect(leftbar, bar[5], (0, bar[1]+15, bar_width, 10), 0)
+        leftbar.blit((font12.render(bar[0], True, clr_white)), (LEFTBAR_WIDTH/2-font12.size(bar[0])[0]/2, bar[1]))
+        leftbar.blit((font12.render(str(bar[2])+'/'+str(bar[3]), True, clr_white)), (LEFTBAR_WIDTH/2-font12.size((str(bar[2])+'/'+str(bar[3])))[0]/2, bar[1]+13))
+        
+    # LEFTBAR PART 3: BLIT + CLEANUP
+    mon.blit(leftbar, (0, 0))
+    leftbar.fill(BACKGROUND_COLOR)
+def xrender_rightbar():
+    itemy, spelly = 3, 30
+    clr_white = (255,255,255)
+    clr_other = (0,123,123)
+
+    # RIGHTBAR PART 1: DISPLAY ITEMS IN INVENTORY
+    rightbar.blit((font12.render(player.name.capitalize()+"'s Inventory", True, clr_white, BACKGROUND_COLOR)), (0,itemy*10))
+    itemy += 2
+    
+    listofi, listofo, listofw, listofW = [], [], [], []
+    for object in player.fighter.inventory:
+        if object.item.itemtype == 'sword':  listofw.append(object)
+        elif object.item.itemtype == 'armor': listofW.append(object)
+        elif object.item.itemtype == 'tool':  listofi.append(object)
+        else: listofo.append(object)
+    printlist = [(listofW, 'Armor'),(listofw, 'Weapons'),(listofi, 'Items'),(listofo, 'Other')]
+    for (lst, name) in printlist:
+        if lst != []:
+            rightbar.blit((font12.render(name, True, clr_other, BACKGROUND_COLOR)), (0,itemy*10))
+            for obj in lst: 
+                itemy += 1
+                rightbar.blit((font12.render(obj.name.capitalize(), True, clr_white, BACKGROUND_COLOR)), (10,itemy*10))
+            itemy += 2
+
+    # 2. DISPLAY SPELLS IN SPELLBOOK
+    rightbar.blit((font12.render(player.name.capitalize()+"'s Spellbook", True, clr_white, BACKGROUND_COLOR)), (0,spelly*10))
+    spelly += 2
+    lvl0, lvl1, lvl2, lvl3 = [], [], [], []
+    for spell in player.fighter.spellbook:
+        if spell[1] == 0:   lvl0.append(spell)
+        elif spell[1] == 1: lvl1.append(spell)
+        elif spell[1] == 2: lvl2.append(spell)
+        elif spell[1] == 3: lvl3.append(spell)
+        else: raise ValueError('Unknown spell level in spellbook: '+str(spell[0]))
+    sl = player.fighter.spells_left
+    spelllist = [(lvl0, 'Level 0', sl[0]), (lvl1, 'Level 1', sl[1]), (lvl2,'Level 2', sl[2]), (lvl3, 'Level 3', sl[3])]
+    for (lst, name, sl) in spelllist:
+        if lst != []:
+            rightbar.blit((font12.render(name+' ('+str(sl)+')', True, clr_other, BACKGROUND_COLOR)), (0,spelly*10))
+            for obj in lst: 
+                spelly += 1
+                rightbar.blit((font12.render(obj[0].capitalize(), True, clr_white, BACKGROUND_COLOR)), (10,spelly*10))
+            spelly += 2
+    mon.blit(rightbar, (LEFTBAR_WIDTH+700,0))
+    rightbar.fill(BACKGROUND_COLOR)
+def xrender_panel():
+    
+    # PANEL 1: RENDER MSG
+    y = 0
+    for (line, color) in game_msgs:
+        panel.blit((font12.render(line, True, color, BACKGROUND_COLOR)), (200, y))
+        y += 12
+    mon.blit(panel, (0, MON_HEIGHT-PANEL_HEIGHT))
+    panel.fill(BACKGROUND_COLOR)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def x_msgbox(w, h, fill_clr, text, x=None, y=None, fontsize=12):
+    if x == None: x = MON_WIDTH/2-w/2
+    if y == None: y = y=MON_HEIGHT/2-h/2
+    lineclr = (0,0,0)
+    window = pygame.Surface((w,h)).convert()
+    window.fill(fill_clr)
+    pygame.draw.line(window, lineclr,(0,0),(w,0))
+    pygame.draw.line(window, lineclr,(0,h-1),(w,h-1))
+    pygame.draw.line(window, lineclr,(0,0),(0,h))
+    pygame.draw.line(window, lineclr,(w-1,0),(w-1,h-1))
+    if fontsize == 12:
+        y1 = 10
+        window.blit((font12.render(text, True, (123,0,0), (123,123,123))), (w/2-font12.size(text)[0]/2, y1))
+    elif fontsize == 15:
+        y1 = 10
+        window.blit((font15.render(text, True, (123,0,0), (123,123,123))), (w/2-font15.size(text)[0]/2, y1))
+    mon.blit(window, (x, y))
+    pygame.display.update()
+
+    event = pygame.event.wait()
+def x_textbox(w, h, fill_clr, options, x=None, y=None, fontsize=12):
+    if x == None: x = MON_WIDTH/2-w/2
+    if y == None: y = MON_HEIGHT/2-h/2
+    lineclr = (0,0,0)
+    window = pygame.Surface((w,h)).convert()
+    window.fill(fill_clr)
+    pygame.draw.line(window, lineclr,(0,0),(w,0))
+    pygame.draw.line(window, lineclr,(0,h-1),(w,h-1))
+    pygame.draw.line(window, lineclr,(0,0),(0,h))
+    pygame.draw.line(window, lineclr,(w-1,0),(w-1,h-1))
+    if fontsize == 12:
+        for (text, y1) in options: window.blit((font12.render(text, True, (123,0,0), (123,123,123))), (w/2-font12.size(text)[0]/2, y1))
+    elif fontsize == 15:
+        for (text, y1) in options: window.blit((font15.render(text, True, (123,0,0), (123,123,123))), (w/2-font15.size(text)[0]/2, y1))
+    mon.blit(window, (x, y))
+    pygame.display.update()
+def x_menu(w, header, options, sorting, fill_clr=(123,123,123), x=None, y=None, fontsize=12):
+    if sorting == 'a' and len(options) > 26: raise ValueError('26 options exceeded!')
+    elif sorting == '1' and len(options) > 9: raise ValueError('9 options exceeded!')
+    h = 30+len(options)*12
+    if x == None: x = MON_WIDTH/2-w/2
+    if y == None: y = MON_HEIGHT/2-h/2
+    lineclr = (0,0,0)
+    window = pygame.Surface((w,h)).convert()
+    window.fill(fill_clr)
+    pygame.draw.line(window, lineclr,(0,0),(w,0))
+    pygame.draw.line(window, lineclr,(0,h-1),(w,h-1))
+    pygame.draw.line(window, lineclr,(0,0),(0,h))
+    pygame.draw.line(window, lineclr,(w-1,0),(w-1,h-1))
+    letter_index = ord(sorting)
+    if fontsize == 12:
+        y1 = 10
+        window.blit((font12.render(header, True, (123,0,0), fill_clr)), (w/2-font12.size(header)[0]/2, 1))
+        for (text) in options: 
+            y1 += 12
+            text = '('+str(unichr(letter_index))+') '+text
+            window.blit((font12.render(text, True, (123,0,0), fill_clr)), (w/2-font12.size(text)[0]/2, y1))
+            letter_index += 1
+    elif fontsize == 15:
+        y1 = 15
+        window.blit((font15.render(header, True, (123,0,0), fill_clr)), (w/2-font15.size(header)[0]/2, 1))
+        for (text) in options: 
+            y1 += 15
+            text = '('+str(letter_index)+') '+text
+            window.blit((font15.render(text, True, (123,0,0), fill_clr)), (w/2-font15.size(text)[0]/2, y1))
+            letter_index += 1
+    mon.blit(window, (x, y))
+    pygame.display.update()
+
+    Done = False
+    while not Done:
+        event = pygame.event.wait()
+        if event.type == pygame.KEYUP:
+            Done = True
+
+    event = pygame.event.wait()
+    if event.type == pygame.KEYDOWN:
+        index = event.key - ord(sorting)
+        if 0 <= index < len(options): return index
+        return None
+################################
+#         MAP BUILDING         #####################################################################################################
+################################
+class Tile:
+    def __init__(self, blocked, block_sight = None):
+        self.blocked = blocked
+        self.explored = False
+        self.in_fov = False
+        
+        # By default, blocked tile blocks sight
+        if block_sight is None: block_sight = blocked
+        self.block_sight = block_sight
+class Rect:
+    def __init__(self, x, y, w, h):
+        (self.x1, self.x2) = (x, x + w)
+        (self.y1, self.y2) = (y, y + h)
+    def center(self):
+        center_x = (self.x1 + self.x2) / 2
+        center_y = (self.y1 + self.y2) / 2
+        return (center_x, center_y)
+    def intersect(self, other):
+        #returns true if this rectangle intersects with another one
+        return (self.x1 <= other.x2 and self.x2 >= other.x1 and
+                self.y1 <= other.y2 and self.y2 >= other.y1)
+def create_room(room):
+    global map
+    for x in range(room.x1 + 1, room.x2):
+        for y in range(room.y1 + 1, room.y2):
+            map[x][y].blocked = False
+            map[x][y].block_sight = False
+def create_h_tunnel(x1, x2, y): #min() and max() are used in case x1>x2
+    global map
+    for x in range(min(x1, x2), max(x1, x2) + 1):
+        map[x][y].blocked = False
+        map[x][y].block_sight = False
+def create_v_tunnel(y1, y2, x): #min() and max() are used in case x1>x2
+    global map
+    for y in range(min(y1, y2), max(y1, y2) + 1):
+        map[x][y].blocked = False
+        map[x][y].block_sight = False
+################################
+#      GAME ENGINE DEFS        #####################################################################################################
+################################
+def closest_enemy(max_range, owner=None): #[NOT WORKING]
+    if owner == None: owner = player
+    closest_enemy = None
+    closest_dist = max_range + 1
+    for object in objects:
+        if object.fighter and not object == owner and is_enemy(owner, object):
+            dist = distance((owner.x, owner.y), (object.x, object.y))
+            if dist < closest_dist:
+                closest_enemy = object
+                closest_dist = dist
+    return closest_enemy
+def distance(owner_xy, target_xy): #[WORKING]
+    return math.sqrt((target_xy[0] - owner_xy[0]) ** 2 + (target_xy[1] - owner_xy[1]) ** 2)
+def dnd_dice(min, max): #[WORKING] # If problem: add random.seed()
+    return random.randint(min, max) 
+def inputbox(title, regex, width=500, height=30):
+    inputstring = ''
+    window = pygame.Surface((width,height)).convert()
+    while 1:
+        window.fill((123,123,123))
+        pygame.draw.line(window, (0,0,0), (0,0),(0,height-1))
+        pygame.draw.line(window, (0,0,0), (width-1,0),(width-1,height-1))
+        pygame.draw.line(window, (0,0,0), (0,0),(width-1,0))
+        pygame.draw.line(window, (0,0,0), (0,height-1),(width-1,height-1))
+        window.blit((font12.render(title, True, (123,0,0), (123,123,123))),(width/2-font12.size(title)[0]/2, 1))
+        window.blit((font12.render(inputstring, True, (0,0,0), (123,123,123))),(width/2-font12.size(inputstring)[0]/2, 15))
+        mon.blit(window,(MON_WIDTH/2-width/2, MON_HEIGHT/2-height/2))
+        pygame.display.update()
+
+        event = pygame.event.wait()
+        if event.type == pygame.KEYDOWN:
+            key_char = unichr(event.key)
+            if event.key == pygame.K_BACKSPACE and inputstring != '':
+                inputstring = inputstring[:len(inputstring)-1]
+            elif event.key == pygame.K_RETURN: return inputstring
+            elif event.key == pygame.K_ESCAPE: return ''
+            else:
+                key_char = re.search(regex,key_char)
+                if key_char != None: inputstring = inputstring + str(key_char.group())
+def is_blocked(x, y): #[???]
+    if map[x][y].blocked: return True
+    for object in objects:
+        if object.blocks and object.x == x and object.y == y:
+            return True
+    return False
+#def melee_dice_ab(object, weapon): = obj.ftr.get_ab()
+#def melee_dice_ac(object): = obj.ftr.get_ac()
+#def melee_dice_dmg(object, weapon): = obj.ftr.get_dmg()
+def melee_dice(attacker, defender, weapon): #[???]
+    att_AB = melee_dice_ab(attacker, weapon)
+    damage = melee_dice_dmg(attacker, weapon)
+    def_AC = melee_dice_ac(defender)
+    """ AB vs AC """
+    if att_AB + dnd_dice(1,20) < def_AC: return (0, 0)
+    else: return (1, damage)
+def message (new_msg, color = (255,255,255)):
+    (MSG_WIDTH, MSG_HEIGHT) = (60, PANEL_HEIGHT - 1)
+    new_msg_lines = textwrap.wrap(new_msg, MSG_WIDTH)
+    for line in new_msg_lines:
+        # If buffer is full, remove the first line
+        if len(game_msgs) == MSG_HEIGHT:
+            del game_msgs[0]
+        # Add new line
+        game_msgs.append((line, color))
+def random_choice(chances_dict): #[WORKING]
+    chances = chances_dict.values()
+    strings = chances_dict.keys()
+    return strings[random_choice_index(chances)]
+def random_choice_index(chances): #[WORKING]
+    dice = dnd_dice(1, sum(chances))
+    (running_sum, choice) = (0, 0)
+    for w in chances:
+        running_sum += w
+        if dice <= running_sum: return choice
+        choice += 1
+def target_xy(focus=None): #[NOT WORKING]
+    global game_state, xy_tile
+    game_state = 'targeting'
+    if focus == None: focus = player
+    xy_tile = Object(focus.x, focus.y, 'X', 'targeting', libtcod.red)
+    objects.append(xy_tile)
+    while 1:
+        render_all()
+        key = libtcod.console_wait_for_keypress(True)    
+        if key.vk in KP_MOVE:
+            xy = (0,0)
+            if key.vk == libtcod.KEY_KP9:   xy = (1, -1)
+            elif key.vk == libtcod.KEY_KP8: xy = (0, -1)
+            elif key.vk == libtcod.KEY_KP7: xy = (-1, -1)
+            elif key.vk == libtcod.KEY_KP6: xy = (1, 0)
+            elif key.vk == libtcod.KEY_KP4: xy = (-1, 0)
+            elif key.vk == libtcod.KEY_KP3: xy = (1, 1)
+            elif key.vk == libtcod.KEY_KP2: xy = (0, 1)
+            elif key.vk == libtcod.KEY_KP1: xy = (-1, 1)
+            (xy_tile.x, xy_tile.y) = (xy_tile.x+xy[0], xy_tile.y+xy[1])
+        elif key.vk == libtcod.KEY_KP5:
+            (ttile_x, ttile_y) = (xy_tile.x, xy_tile.y)
+            objects.remove(xy_tile)
+            game_state = 'playing'
+            return (ttile_x, ttile_y)
+        elif key.vk == libtcod.KEY_ESCAPE:
+            objects.remove(xy_tile)
+            game_state = 'playing'
+            return 'cancelled'
+################################
+#           CLASSES            #####################################################################################################
+################################
+class Object:
+    def __init__(self, x, y, name, img, blocks, always_visible=False,
+                 fighter=None, ai=None, item=None, rune=False):
+        self.x, self.y, self.name = x, y, name
+        self.img, self.blocks, self.always_visible = img, blocks, always_visible
+        self.fighter, self.ai, self.item, self.rune = fighter, ai, item, rune
+        if self.fighter: self.fighter.owner = self
+        if self.ai: self.ai.owner = self
+        if self.item: self.item.owner = self
+    def move(self, dx, dy):
+        if not is_blocked(self.x + dx, self.y + dy):
+            self.x += dx
+            self.y += dy
+    def random_move(self):
+        x=0; dxy = (dnd_dice (-1, 1),dnd_dice (-1, 1))
+        while is_blocked(self.x + dxy[0], self.y + dxy[1]) and x < 20:
+            dxy = (dnd_dice (-1, 1),dnd_dice (-1, 1))
+            x +=1
+        self.move(dxy[0],dxy[1])
+    def move_towards(self, target_x, target_y):
+        (dx, dy) = (0, 0)
+        #do a scan for quickest way to the target
+        if distance((self.x+1, self.y+1),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x+1, self.y+1): (dx, dy) = (1, 1)
+        if distance((self.x+1, self.y-1),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x+1, self.y-1): (dx, dy) = (1, -1)
+        if distance((self.x-1, self.y+1),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x-1, self.y+1): (dx, dy) = (-1, 1)
+        if distance((self.x-1, self.y-1),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x-1, self.y-1): (dx, dy) = (-1, -1)
+        if distance((self.x+1, self.y+0),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x+1, self.y+0): (dx, dy) = (1, 0)
+        if distance((self.x+0, self.y+1),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x+0, self.y+1): (dx, dy) = (0, 1)
+        if distance((self.x+0, self.y-1),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x+0, self.y-1): (dx, dy) = (0, -1)
+        if distance((self.x-1, self.y+0),(target_x, target_y)) < distance((self.x+dx, self.y+dy),(target_x, target_y)): 
+            if not is_blocked(self.x-1, self.y+0): (dx, dy) = (-1, 0)
+        self.move(dx, dy)
+    def xdraw(self):
+        smap.blit(self.img, (self.x*10, self.y*10))
+class Fighter:
+    def __init__(self, hp, STR, DEX, CON, MAG, level,
+                 race=None, job=None, BAB=0, death_function=None,
+                 inventory=None, spellbook=None, spells_left=[0,0,0,0]):
+        self.helm, self.armor, self.rhand, self.lhand = AC_empty,AC_empty,AC_empty,AC_empty
+        self.hp, self.max_hp = hp, hp
+        self.STR, self.DEX, self.CON, self.MAG, self.level = STR, DEX, CON, MAG, level
+        self.race, self.job, self.BAB, self.xp, self.death_function = race, job, BAB, 0, death_function
+        self.inventory, self.spellbook, self.spells_left = inventory, spellbook, spells_left
+    def get_strmod(self): return int((self.STR-10)/2)
+    def get_dexmod(self): 
+        if int((self.DEX-10)/2) > self.armor.item.max_dexmod: return int(self.armor.item.max_dexmod)
+        else: return int((self.DEX-10)/2)
+    def get_conmod(self): return int((self.CON-10)/2)
+    def get_magmod(self): return int((self.MAG-10)/2)
+    def get_ab(self): 
+        dex_ab = self.get_dexmod() + self.BAB + self.rhand.item.enchanted
+        str_ab = self.get_strmod() + self.BAB + self.rhand.item.enchanted
+        if self.rhand.item.weight == 'heavy': return str_ab
+        elif self.rhand.item.weight == 'light': return dex_ab
+        else: 
+            if str_ab >= dex_ab: best_ab = str_ab
+            else: best_ab = dex_ab
+            return best_ab
+    def get_ac(self): return int(10+self.armor.item.ac+self.armor.item.enchanted+self.get_dexmod())
+    def get_dmg(self): return (self.rhand.item.dmg[0],self.rhand.item.dmg[1],self.get_strmod()+self.rhand.item.dmg[2]+self.rhand.item.enchanted) #(min,max,bonus)
+    def attack(self, target):
+        attack = melee_dice(self.owner, target, self.rhand.item) #Will return (1/0, damage), 1=hit, 0=miss
+        if attack[0] == 0: message(self.owner.name.capitalize() + ' attacks '+ target.name +' but misses', libtcod.orange)
+        elif attack[1] <= 0:message(self.owner.name.capitalize() + ' hits '+ target.name +' but did not cause any damage', libtcod.orange)
+        else:
+            message(self.owner.name.capitalize() + ' hits '+ target.name +'!', libtcod.orange)
+            target.fighter.take_damage(attack[1])
+    def cast_spell(self, ID):
+        if self.owner == player: message('Attempting to cast '+ID[0], COLOR_MAGIC)
+        if self.spells_left[ID[1]] == 0: message('You have no spells left', COLOR_WARNING)
+        else: # Spells left to cast
+            if self.owner == player: 
+                skip_one_turn()
+                if game_state == 'dead': return
+
+            if ID[1] == 0:
+                if ID[0] == 'ray of frost': spell_cast = spell(ID[0], self.owner, None)
+            elif ID[1] == 1:
+                if ID[0] == 'magic missile': spell_cast = spell(ID[0], self.owner, None)
+            else: raise ValueError('Attempted spell not registered in def cast_spells')
+#        if ID == 'blink': spell_cast = spell(ID, self.owner, target_xy())
+
+            if spell_cast == 'spell cast': 
+                if ID[1] == 0:   self.spells_left = [self.spells_left[0]-1, self.spells_left[1], self.spells_left[2], self.spells_left[3]]
+                elif ID[1] == 1:   self.spells_left = [self.spells_left[0], self.spells_left[1]-1, self.spells_left[2], self.spells_left[3]]
+                elif ID[1] == 2: self.spells_left = [self.spells_left[0], self.spells_left[1], self.spells_left[2]-1, self.spells_left[3]]
+                elif ID[1] == 3: self.spells_left = [self.spells_left[0], self.spells_left[1], self.spells_left[2], self.spells_left[3]-1]
+    def drop(self, item):
+        objects.append(item)
+        self.inventory.remove(item)
+        item.x, item.y = self.owner.x, self.owner.y
+        if self.owner == player: message('You drop ' + item.name, INFO_COLOR2)
+    def equip(self, item, weapon_hand='none'): 
+        if item.item.equippable == 'helm': 
+            self.remove(self.helm)
+            self.helm = item
+            self.inventory.remove(item)
+            if self.owner == player: message("You're now wearing "+item.name)
+        elif item.item.equippable == 'armor':
+            self.remove(self.armor)
+            self.armor = item
+            self.inventory.remove(item)
+            if self.owner == player: message("You're now wearing "+item.name)
+        elif item.item.equippable == 'hands': will_add_this()
+        elif item.item.equippable == 'hand':
+            if weapon_hand == 'right':
+                self.remove(self.rhand)
+                self.rhand = item
+                self.inventory.remove(item)
+                if self.owner == player: message("You're now holding "+item.name+' in your right hand')
+            elif weapon_hand == 'left':
+                self.remove(self.lhand)
+                self.lhand = item
+                self.inventory.remove(item)
+                if self.owner == player: message("You're now holding "+item.name+' in your left hand')
+        else: message(item.name + ' cannot be equipped')
+    def heal(self, amount):
+        self.hp += amount
+        if self.hp > self.max_hp: self.hp = self.max_hp
+    def remove(self, item_location):
+        if item_location == AC_empty: return
+        else:
+            self.inventory.append(item_location)
+            message('Removed '+item_location.name)
+        if item_location == self.helm:    self.helm = AC_empty
+        elif item_location == self.armor: self.armor = AC_empty
+        elif item_location == self.rhand: self.rhand = AC_empty
+        elif item_location == self.lhand: self.lhand = AC_empty
+    def take_damage(self, damage, attacker=None):
+        if damage > 0:
+            self.hp -= damage
+            if self.hp <= 0:
+                if self.death_function is not None: self.death_function(self.owner)
+                if self.owner != player:
+                    #if attacker == None: player.fighter.xp += (300 + 100*(self.level - player.fighter.level))/4
+                    XP = (300 + 100*(self.level - player.fighter.level))/2
+                    if XP <= 0: XP = 10
+                    if attacker == None: player.fighter.xp += XP
+                    else: attacker.fighter.xp += XP
+
+class BasicMonster():
+    def __init__(self, state='normal', chasing_x=None, chasing_y=None):
+        self.state = state
+        (self.chasing_x, self.chasing_y) = (chasing_x, chasing_y)
+    def take_turn(self):
+        monster = self.owner
+        target = closest_enemy(5, monster)
+        if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
+            if target == None: target = player
+            (self.chasing_x, self.chasing_y) = (target.x, target.y) #remember where player last was seen
+            self.state = 'chasing' #if player has been spotten he will find you
+            if distance((monster.x, monster.y),(target.x, target.y)) >= 2: monster.move_towards(target.x, target.y)
+            elif target.fighter.hp > 0: monster.fighter.attack(target)
+        else: #if cannot see player
+            if target != None: 
+                (self.chasing_x, self.chasing_y) = (target.x, target.y) #remember where player last was seen
+                self.state = 'chasing' #if player has been spotten he will find you
+                if distance((monster.x, monster.y), (target.x, target.y)) >= 2: monster.move_towards(target.x, target.y)
+                elif target.fighter.hp > 0: monster.fighter.attack(target)
+            else:
+                if self.state == 'chasing': #if has seen player, move towards last seen point
+                    if monster.x == self.chasing_x and monster.y == self.chasing_y: self.state = 'normal'
+                    else: monster.move_towards(self.chasing_x, self.chasing_y)
+                else: monster.random_move()
+class Item:
+    def __init__(self, itemtype, weight, enchanted=0, equippable='no', drops_on_death=False,
+                 dmg=(0, 0, 0),
+                 ac=0, max_dexmod=100,
+                 use_function=None, consumable=(0,0)):
+        # itemtype = all, helm, armor, weapon, potion
+        # weight = none, light, medium, heavy
+        # equippable = all, hand, hands, helm, armor, no
+        self.itemtype, self.weight, self.equippable = itemtype, weight, equippable
+        self.enchanted, self.drops_on_death = enchanted, drops_on_death
+        self.dmg, self.ac, self.max_dexmod = dmg, ac, max_dexmod
+        self.use_function, self.consumable = use_function, consumable
+    def use(self):
+        if self.use_function == None: message ('The ' + self.owner.name + ' cannot be used')
+        else: 
+            use = item_use(self)
+            if use == 'consume': self.consumable = (self.consumable[0], self.consumable[1]-1)
+            message (self.owner.name.capitalize()+' has '+str(self.consumable[1])+' charges left', COLOR_WARNING)
+            self.owner.name = self.owner.orig_name+' ('+str(self.consumable[1])+')'
+    def pick_up(self, looted='no'):
+        if len(player.fighter.inventory) >= 26: message('Your inventory is full!')
+        else:
+            player.fighter.inventory.append(self.owner)
+            if looted == 'no': objects.remove(self.owner)
+            message ('Picked up ' + self.owner.name, INFO_COLOR2)
+################################
+#     TRIGGERS AND ACTIONS     #####################################################################################################
+################################
+def spell(spell, owner, target): # Target is either class object or (x, y)
+    if spell == 'blink':
+        if target == 'cancelled': return 'cancelled'
+        (x, y) = target[0], target[1]
+        if not is_blocked(x, y):
+            owner.x, owner.y = x, y
+            fov_recompute = True
+            return 'spell cast'
+    elif spell == 'magic missile':
+        if owner == player:
+            enemy = closest_enemy(15)
+            if enemy == None: enemy = player
+            xy = target_xy(enemy)
+            if xy == 'cancelled': return 'cancelled'
+            else:
+                (x, y) = xy
+                for object in objects:
+                    if object.x == x and object.y == y and object.fighter and object != owner:
+                        target = object
+                        break
+        if target != None:
+            dmg = 0
+            for no in range(int((player.fighter.level+1)/2)): dmg += dnd_dice(1,4) + 1 # 1 missile +1 per 2 levels
+            message('Magic missiles hit ' + target.name + ' for ' + str(dmg) + ' damage.', COLOR_MAGIC)
+            target.fighter.take_damage(dmg)
+            return 'spell cast'
+    elif spell == 'ray of frost':
+        if owner == player:
+            enemy = closest_enemy(15)
+            if enemy == None: enemy = player
+            xy = target_xy(enemy)
+            if xy == 'cancelled': return 'cancelled'
+            else:
+                (x, y) = xy
+                for object in objects:
+                    if object.x == x and object.y == y and object.fighter and object != owner:
+                        target = object
+                        break
+        if target != None:
+            dmg = dnd_dice(1,4) + 1
+            message('Ray of frost hits ' + target.name + ' for ' + str(dmg) + ' damage.', COLOR_MAGIC)
+            target.fighter.take_damage(dmg)
+            return 'spell cast'
+def spawn_item(name, enchanted=0):
+    #""" ARMOR """
+    # Light
+    if name == 'AC_a_cloak': returned_item = Object(0, 0, 'cloak', IMG_A_CLOAK, False, item=Item(
+            itemtype='armor', weight='light', equippable='armor', ac=2, max_dexmod=100))
+    # Medium
+    elif name == 'AC_a_leatherarmor': returned_item = Object(0, 0, 'leather armor', IMG_A_LEATHERARMOR, False, item=Item(
+            itemtype='armor', weight='medium', equippable='armor', ac=4, max_dexmod=8))
+    # Heavy
+    elif name == 'AC_a_chainmail': returned_item = Object(0, 0, 'chainmail', IMG_A_CHAINMAIL, False, item=Item(
+            itemtype='armor', weight='medium', equippable='armor', ac=6, max_dexmod=4))
+
+    #""" MAGIC ITEMS / TOOLS """
+    elif name == 'AC_i_magicmarker': returned_item = Object(0, 0, 'magic marker', IMG_I_MAGICMARKER, False, item=Item(
+            itemtype='tool', weight='light', drops_on_death=True, use_function='yes', consumable=(1,5)))
+    elif name == 'AC_i_digging': returned_item = Object(0, 0, 'wand of digging', IMG_I_DIGGING, False, item=Item(
+            itemtype='tool', weight='light', drops_on_death=True, use_function='yes', consumable=(1,dnd_dice(1,5))))
+
+    #""" WEAPONS """
+    # Light
+    elif name == 'AC_w_dagger': returned_item = Object(0, 0, 'dagger', IMG_W_DAGGER, False, item=Item(
+            itemtype='sword', weight='light', equippable='hand', dmg=(1,4,0)))
+    # Medium
+    elif name == 'AC_w_shortsword': returned_item = Object(0, 0, 'shortsword', IMG_W_SHORTSWORD, False, item=Item(
+            itemtype='sword', weight='medium', equippable='hand', dmg=(1,6,0)))
+    # Heavy
+    elif name == 'AC_w_longsword': returned_item = Object(0, 0, 'longsword', IMG_W_LONGSWORD, False, item=Item(
+            itemtype='sword', weight='heavy', equippable='hand', dmg=(1,8,0)))
+    elif name == 'AC_w_greatsword': returned_item = Object(0, 0, 'greatsword', IMG_W_GREATSWORD, False, item=Item(
+            itemtype='sword', weight='heavy', equippable='hands', dmg=(1,11,1)))
+    else: raise ValueError('Requested item ('+str(name)+') does not exist in def spawn_item')
+
+    if dnd_dice(1,20) == 1: returned_item.item.drops_on_death = True
+    #""" ENCHANTMENT HERE """
+    if enchanted > 0: 
+        returned_item.item.enchanted = enchanted
+        returned_item.name = returned_item.name+' +'+str(returned_item.item.enchanted)
+        returned_item.item.drops_on_death = True
+
+    return returned_item
+def new_player(player_name, player_job):
+    global player
+    # 1. Statics
+    player_component = Fighter(hp=0, STR=10, DEX=10, CON=10, MAG=10, level=1, race='human', job=player_job, BAB=0, 
+                               death_function=player_death, inventory = [], spellbook = [])
+    player = Object(0, 0, 'Player', IMG_PLAYER, blocks=True, fighter=player_component)
+
+    # 2. Player jobs
+    if player_job == 'rogue':
+        player.fighter.DEX = 14
+        player.fighter.hp_base = 6
+        player.fighter.armor, player.fighter.rhand = spawn_item('AC_a_leatherarmor'), spawn_item('AC_w_shortsword')
+        player.fighter.inventory.append(spawn_item('AC_i_magicmarker'))
+    elif player_job == 'fighter':
+        player.fighter.STR = 14
+        player.fighter.hp_base = 8
+        player.fighter.bab = 1
+        player.fighter.armor, player.fighter.rhand = spawn_item('AC_a_chainmail'), spawn_item('AC_w_longsword')
+    elif player_job == 'mage':
+        player.fighter.STR, player.fighter.DEX, player.fighter.MAG = 8, 8, 14
+        player.fighter.hp_base = 4
+        player.fighter.armor = spawn_item('AC_a_cloak')
+        player.fighter.spellbook.append(('ray of frost', 0))
+        player.fighter.spellbook.append(('magic missile', 1))
+        player.fighter.spells_left = [6, 3, 0, 0]
+
+    # 3. Set HP/MP and return
+    player.fighter.hp = player.fighter.hp_base + int((player.fighter.CON -10)/2)
+    player.fighter.max_hp = player.fighter.hp
+def from_dungeon_level(table):
+    #returns a value that depends on level. the table specifies what value occurs after each level, default is 0.
+    for (value, level) in reversed(table):
+        if dungeon_level >= level:
+            return value
+    return 0
+def place_objects(room):
+ 
+    # Item and monster chance
+    if 1 <= dungeon_level <= 5:
+        monster_chances = {}
+        monster_chances['goblin'] = 50
+        monster_chances['kobold'] = 50
+        max_monsters_per_room = from_dungeon_level([[2, 1], [3, 3], [4, 5]])
+
+    # Place stuff
+    for i in range(random.randint(0,max_monsters_per_room)):
+        x = random.randint(room.x1+1, room.x2-1)
+        y = random.randint(room.y1+1, room.y2-1)
+        if not is_blocked(x, y):
+            choice = random_choice(monster_chances)
+            monster_append(choice, x, y)
+#    for i in rance(dnd_dice(0,max_items)):
+#        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
+#        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
+#        if not is_blocked(x, y):
+#            choice = random_choice(item_chances)
+#            item_append(choice, x, y)
+#
+#def item_append(item_id, x, y):
+#def x_menu(w, h, header, options, sorting, fill_clr=(123,123,123), x=None, y=None, fontsize=12):
+def player_inv_menu(header, mode):
+    index = None
+    if len(player.fighter.inventory) == 0: message('Your inventory is empty')
+    else:
+        if mode == 'd': # Drop
+            options = [item.name for item in player.fighter.inventory]
+            if len(options) > 0: index = x_menu(400, header, options, 'a')
+            else: message('You have no item to drop')
+            if index != None:
+                optlist = [item for item in player.fighter.inventory]
+                player.fighter.drop(optlist[index])
+        elif mode == 'e': # Equip
+            options = [item.name for item in player.fighter.inventory if item.item.equippable == 'armor']
+            if len(options) > 0: index = x_menu(400,header, options, 'a')
+            else: message('You have no armor to equip', INFO_COLOR)
+            if index != None:
+                optlist = [item for item in player.fighter.inventory if item.item.equippable == 'armor']
+                player.fighter.equip(optlist[index])
+        elif mode == 'r': # Remove
+            choice = x_menu(400, 'Which item do you want to remove?',
+                          ['Helm: ' + player.fighter.helm.name,
+                           'Armor: ' + player.fighter.armor.name,
+                           'R Hand: ' + player.fighter.rhand.name,
+                           'L Hand: ' + player.fighter.lhand.name], 'a')
+            if choice == 0:
+                if player.fighter.helm.name == '': message('You have no helmet to remove', INFO_COLOR)
+                else: player.fighter.remove(player.fighter.helm)
+            elif choice == 1:
+                if player.fighter.armor.name == '': message('You have no armor to remove', INFO_COLOR)
+                else: player.fighter.remove(player.fighter.armor)
+            elif choice == 2:
+                if player.fighter.rhand.name == '': message('Your right hand is empty', INFO_COLOR)
+                else: player.fighter.remove(player.fighter.rhand)
+            elif choice == 3:
+                if player.fighter.lhand.name == '': message('Your left hand is empty', INFO_COLOR)
+                else: player.fighter.remove(player.fighter.lhand)
+        elif mode == 'u': # Use
+            options = [item.name for item in player.fighter.inventory if item.item.itemtype == 'tool']
+            if len(options) > 0: index = x_menu(400, header, options, 'a')
+            else: message('You have no item to use', INFO_COLOR)
+            if index != None:
+                optlist = [item for item in player.fighter.inventory if item.item.itemtype == 'tool']
+                optlist[index].item.use()
+        elif mode == 'w': # Wield
+            options = [item.name for item in player.fighter.inventory if item.item.equippable == 'hand']
+            if len(options) > 0: index = x_menu(400, header, options, 'a')
+            else: message('You have no weapon to wield', INFO_COLOR)
+            if index != None:
+                optlist = [item for item in player.fighter.inventory if item.item.equippable == 'hand']
+                hand = x_menu(400, 'In which hand do you want to equip it?',
+                            ['Right hand','Left hand'],'a')
+                if hand == 0:   w_hand='right'
+                elif hand == 1: w_hand='left'
+                if hand != None: player.fighter.equip(optlist[index], w_hand)
+def player_move_or_attack(dx, dy):
+    global fov_recompute
+    x = player.x + dx; y = player.y + dy #Check what is there and grep it
+    target = None
+
+    for object in objects:
+        if object.fighter and object.x == x and object.y == y:
+            target = object
+            break
+    if target != None and target != player: player.fighter.attack(target)
+    else:
+        player.move(dx, dy)
+        fov_recompute = True
+def make_map_test():
+    global map, objects, IMG_FLOOR_DARK, IMG_FLOOR_LIGHT, IMG_WALL_DARK, IMG_WALL_LIGHT
+
+    IMG_FLOOR_DARK, IMG_FLOOR_LIGHT = pygame.image.load('img/lv1/ground_dark.png'),pygame.image.load('img/lv1/ground_light.png')
+    IMG_WALL_DARK, IMG_WALL_LIGHT   = pygame.image.load('img/lv1/wall_dark.png'),pygame.image.load('img/lv1/wall_light.png')
+
+    objects, rooms, num_rooms = [player], [], 0
+    MAX_ROOMS,ROOM_SIZE = 50, (6, 10)
+
+    map = [[ Tile(True) for y in range(MAP_HEIGHT/10) ] for x in range(MAP_WIDTH/10) ]
+
+    for r in range(MAX_ROOMS):
+        w, h = random.randint(ROOM_SIZE[0], ROOM_SIZE[1]), random.randint(ROOM_SIZE[0], ROOM_SIZE[1])
+        x, y = random.randint(0, MAP_WIDTH/10 -w -1), random.randint(0, MAP_HEIGHT/10 -h -2)
+        new_room = Rect(x, y, w, h)
+
+        failed = False
+        for other_room in rooms:
+            if new_room.intersect(other_room):
+                failed = True
+                break
+        if not failed:
+            create_room(new_room)
+            (new_x, new_y) = new_room.center() #center coordinates of new room, will be useful later
+            if num_rooms == 0: #this is the first room, where the player starts at
+                player.x = new_x
+                player.y = new_y
+            else: #all rooms after the first:
+#                place_objects(new_room)
+                #connect it to the previous room with a tunnel
+                (prev_x, prev_y) = rooms[num_rooms-1].center()
+                if random.randint(0, 1) == 1: #First move horizontally, then vertically
+                    create_h_tunnel(prev_x, new_x, prev_y)
+                    create_v_tunnel(prev_y, new_y, new_x)
+                else: #first move vertically, then horizontally
+                    create_v_tunnel(prev_y, new_y, prev_x)
+                    create_h_tunnel(prev_x, new_x, new_y)
+            rooms.append(new_room)
+            num_rooms += 1
+
+def make_map_cave():
+    global map, objects, stairsdown
+
+    ROOM_SIZE = (6, 10)
+    MAX_ROOMS = 50
+
+    objects = [player]
+    rooms = []; num_rooms = 0
+
+    # Fill map with blocked tiles..
+    map = [[ Tile(True)
+        for y in range(MAP_HEIGHT) ]
+           for x in range(MAP_WIDTH) ]
+
+    # Fill map with rooms
+    for r in range(MAX_ROOMS):
+        w = random.randint(ROOM_SIZE[0], ROOM_SIZE[1])
+        h = random.randint(ROOM_SIZE[0], ROOM_SIZE[1])
+        x = random.randint(0, MAP_WIDTH - w - 1)
+        y = random.randint(0, MAP_HEIGHT- h - 2)
+        new_room = Rect(x, y, w, h)
+         #run through the other rooms and see if they intersect with this one
+        failed = False
+        for other_room in rooms:
+            if new_room.intersect(other_room):
+                failed = True
+                break
+        if not failed:
+            create_room(new_room)
+            (new_x, new_y) = new_room.center() #center coordinates of new room, will be useful later
+            if num_rooms == 0: #this is the first room, where the player starts at
+                player.x = new_x
+                player.y = new_y
+            else: #all rooms after the first:
+                place_objects(new_room)
+                #connect it to the previous room with a tunnel
+                (prev_x, prev_y) = rooms[num_rooms-1].center()
+                if random.randint(0, 1) == 1: #First move horizontally, then vertically
+                    create_h_tunnel(prev_x, new_x, prev_y)
+                    create_v_tunnel(prev_y, new_y, new_x)
+                else: #first move vertically, then horizontally
+                    create_v_tunnel(prev_y, new_y, prev_x)
+                    create_h_tunnel(prev_x, new_x, new_y)
+            rooms.append(new_room)
+            num_rooms += 1
+
+    stairsdown = Object(new_x, new_y, 'stairs going up', IMG_W_SHORTSWORD, False, always_visible=True)
+    objects.append(stairsdown)
+def monster_append(monster_id, x, y): #Append monster to objects
+    monster_inventory = []
+    mvp = BasicMonster()
+    (w_enchanted, a_enchanted) = (dnd_dice(1, 10), dnd_dice(1, 10))
+    if w_enchanted > 1: w_enchanted = 0
+    if a_enchanted > 1: a_enchanted = 0
+    
+    if 1 <= dungeon_level <= 5:
+        if monster_id == 'goblin':
+            fighter_component = Fighter(hp=4, STR=8, DEX=10, CON=10, MAG=0,level=1,BAB=1, death_function=monster_death)
+            monster = Object(x, y, 'goblin', IMG_I_DIGGING, True, fighter=fighter_component, ai=mvp)
+            monster.fighter.rhand = spawn_item('AC_w_shortsword')
+        elif monster_id == 'kobold':
+            fighter_component = Fighter(hp=2, STR=6, DEX=12, CON=10, MAG=0,level=1,BAB=1, death_function=monster_death)
+            monster = Object(x, y, 'kobold', IMG_I_DIGGING, True, fighter=fighter_component, ai=mvp)
+            monster.fighter.armor = spawn_item('AC_a_leatherarmor')
+            monster.fighter.rhand = spawn_item('AC_w_shortsword')
+            
+    objects.append(monster)
+######### Key-pressing commands #########
+def graveyard_append():
+    player.dlevel = dungeon_level
+    try:
+        file = shelve.open('save/.graveyard', 'w')
+        characters = file['characters']
+        characters.append(player)
+        file['characters'] = characters
+        file.close()    
+    except:
+        file = shelve.open('save/.graveyard', 'n')
+        characters = [player]
+        file['characters'] = characters
+        file.close()    
+def player_death(player):
+    global game_state
+    message('You have died!', libtcod.red)
+    game_state = 'dead'
+    player.char = '%'
+    player.color = libtcod.dark_red
+    player.dlevel = dungeon_level
+    graveyard_append()
+def monster_death(monster):
+    message(monster.name.capitalize() + ' was slain', COLOR_WARNING)
+    monster.char = '%'
+    monster.color = libtcod.dark_red
+    monster.blocks = False
+    monster.ai = None
+    monster.name = monster.name + ' corpse'
+    #Drop all held items and put into inventory
+    eq = [monster.fighter.helm, monster.fighter.armor, monster.fighter.rhand, monster.fighter.lhand]
+    for item in eq:
+        if item.item.drops_on_death:
+            monster.inventory.append(item)
+    for item in monster.inventory:
+        item.x, item.y = monster.x, monster.y
+        objects.append(item)
+    monster.fighter = None
+def take_turn_player():
+    global fov_recompute, game_state, waiting_turns
+
+    if game_state == 'waiting': event = pygame.event.poll() # Check for keypress
+    else: event = pygame.event.wait() # Wait for keypress
+    pygame.event.clear()
+
+    if event.type == pygame.KEYDOWN:
+
+        """ GENERAL COMMANDS (DESPITE PLAYING / DEAD) """
+        if event.key == pygame.K_ESCAPE: return 'exit'
+
+
+        """ COMMANDS DURING PLAY """
+        if game_state == 'playing': 
+                
+            """KP_KEYS = MOVEMENT """
+            if   event.key == pygame.K_KP9: player_move_or_attack(1, -1)
+            elif event.key == pygame.K_KP8: player_move_or_attack(0, -1)
+            elif event.key == pygame.K_KP7: player_move_or_attack(-1, -1)
+            elif event.key == pygame.K_KP6: player_move_or_attack(1, 0)
+            elif event.key == pygame.K_KP5: player_move_or_attack(0, 0)
+            elif event.key == pygame.K_KP4: player_move_or_attack(-1, 0)
+            elif event.key == pygame.K_KP3: player_move_or_attack(1, 1)
+            elif event.key == pygame.K_KP2: player_move_or_attack(0, 1)
+            elif event.key == pygame.K_KP1: player_move_or_attack(-1, 1)
+
+            #""" A-Z """
+            elif event.key == pygame.K_r: player_inv_menu('Which item do you want to remove?', 'r')
+            elif event.key == pygame.K_d: player_inv_menu('Which item do you want to drop?', 'd')
+            elif event.key == pygame.K_u: player_inv_menu('Which item do you want to use?', 'u')
+            elif event.key == pygame.K_w: player_inv_menu('What do you want to wield?', 'w')
+            elif event.key == pygame.K_e: player_inv_menu('What do you want to equip?', 'e')
+            elif event.key == pygame.K_z: player_spell_menu()
+
+            #""" SPECIAL CHARACTERS """
+            elif event.key == pygame.K_SPACE:
+                rest = x_menu(400, 'Do you wish to rest?',['Yes','No'],'1')
+                if rest == 0:   
+                    game_state = 'waiting'
+                    waiting_turns = 10
+                    message('Resting..')
+            elif event.key == pygame.K_GREATER:
+                if stairsdown.x == player.x and stairsdown.y == player.y: next_level()
+            elif event.key == pygame.K_COMMA:
+                for object in objects:
+                    if object.x == player.x and object.y == player.y and object.item:
+                        object.item.pick_up()
+                        break
+            
+            else: return 'didnt_take_turn'
+################################
+#     MAIN GAME MODES HERE     #####################################################################################################
+################################
+def main_menu():
+    IMG_MAIN_MENU = pygame.image.load('img/BG_IMG2.png')
+    while 1: # Main Loop
+        # TOP
+        mon.blit(IMG_MAIN_MENU,(0,0))
+        mon.blit((font20.render('Ath Cliath', True, (123,0,0))), (MON_WIDTH/2-font20.size('Ath Cliath')[0]/2, MON_HEIGHT/2-150))
+
+        # MID
+        printlist = [('(L) Load Game', 35),('(N) New game', 15),('(Q) Quit', 175),('(G) Graveyard', 155)]
+        x_textbox(200, 200, (123,123,123), printlist, y=300, fontsize=15)
+
+        # LOW
+        printlist = [(version, 10),('A python roguelike', 25),('Created by Olle Kvarnstr;m', 40)]
+        x_textbox(200, 60, (123,123,123), printlist, y=650)
+        pygame.display.update()
+
+        # KEYPRESS
+        event = pygame.event.wait()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_l: # Load Game
+                loadgame_ok = load_game()
+                if loadgame_ok: play_game()
+            elif event.key == pygame.K_n: # New Game
+                newgame_ok = new_game()
+                if newgame_ok: play_game()
+            elif event.key == pygame.K_q: # Quit game
+                break
+            elif event.key == pygame.K_g: # Graveyard
+                try: graveyard()
+                except: x_msgbox(300,30, (123,123,123), 'The Graveyard is empty')
+
+def new_game(testing=False):
+    global game_msgs, game_state, dungeon_level, fov_recompute
+
+    # 1. Player Name
+    if testing: player_name = 'test'
+    else: player_name = inputbox('Player name?','[a-zA-Z]+', width=300).capitalize()
+    if player_name == '': return False
+
+    # 2. Player Job
+    index = None
+    while index == None:
+        index = x_menu(200, 'Which class are you?', ['Rogue','Fighter','Mage'],'1', y=350)
+    if index == 0: player_job = 'rogue'
+    elif index == 1: player_job = 'fighter'
+    elif index == 2: player_job = 'mage'
+    else: raise ValueError('No player_job chosen')
+
+    # 3. Start
+    new_player(player_name, player_job)
+    dungeon_level = 1
+    make_map_test()
+    #make_map_cave()
+    game_state = 'playing'
+    fov_recompute = True
+    game_msgs = []
+    return True
+
+def play_game():
+    global game_state, waiting_turns
+    player_action = None
+
+    while 1:
+
+        xgraphics()
+        #check_level_up()
+        player_action = take_turn_player()
+        if player_action == 'exit':
+            if game_state == 'waiting': game_state = 'playing'
+            #save_game()
+            break
+        #if (game_state == 'playing' and player_action != 'didnt_take_turn') or game_state == 'waiting': 
+        #    take_turn_ai()
+        #    take_turn_rune()
+        if game_state == 'waiting':
+            if waiting_turns == 0: # Rest is done
+                player.fighter.hp = player.fighter.max_hp
+                player_reset_spells()
+                message('You feel refreshed')
+                game_state = 'playing'
+            else: waiting_turns -= 1
+            for object in objects: # Rest Aborted
+                if object.ai and object != player and distance((object.x,object.y),(player.x,player.y)) < 5:
+                    message(object.name.capitalize() + ' in sight!')
+                    game_state = 'playing'
+
+
+# List of Defines
+AC_empty = Object(0, 0, '', None, True, item=Item(itemtype='all', weight='none', equippable='all', dmg = (1,2,0), ac=0, max_dexmod=100))
+version = 'v0.3.0a2'
+sys.stdout = open("debug.txt", "w")
+
+main_menu()
+
+##############################
+#         WHAT TO DO         #####################################################################################################
+##############################
+"""
+IDEAS:
+   A speed system including haste
+   Two-weapon fighting
+   More weapons (esp. heavy)
+   Make a nicer menu, esp for inventory
+   Add potions/random items to level
+   Add random starting items
+   Add 's'neak
+   Add some way to give +STR/DEX/CON/MAG
+   Make the loot-meny being used for targeting monsters and picking up items
+   Consider mage and armor combo
+   Make it possible to walk long
+   Make a '?'
+   Add some way to document and learn spells
+   Re-add throw function
+   Add items to monsters
+   Add monster shout (make people nearby notice player)
+
+SPELLS:
+-Level 1
+  Shield 
+
+BUGS:
+ Make item not crash if 16 items are dropped in a row (render_panel())
+ Fix Damage in render_bar being 1d6+0, 1d6+-1 and such
+ No level cap to spell('magic missile'), should be capped at lvl9
+ Rename stairsdown to stairs (since they go up, ehe)
+ FOV algo is stupid
+"""
+# ADDED THIS VERSION:
+# focus == FOV
+"""
+Not entirely happy with FOV algo since it only works fine when looking to the player's lower right..need to fix later
+"""
