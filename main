@@ -14,6 +14,8 @@ import random
 from ath_cliath.Tile import Tile
 from ath_cliath.Rect import Rect
 
+import ath_cliath.graveyard as graveyard
+
 ################################
 #       GRAPHICS / INIT        #####################################################################################################
 ################################
@@ -1105,11 +1107,11 @@ def next_level():
         make_map_test()
         fov_recompute = True
     else: 
-        dungeon_level = '5+'
+        player.dlevel = '5+'
         message('You have escaped the dungeon!', (0,255,0))
         message('Press escape to leave')
         game_state = 'dead'
-        graveyard_append()
+        graveyard.append(player)
 def new_player(player_name, player_job):
     global player
     # 1. Statics
@@ -1202,26 +1204,13 @@ def make_map_test():
     objects.append(stairsup)
 
 ######### Key-pressing commands #########
-def graveyard_append():
-    player.dlevel = dungeon_level
-    try:
-        file = shelve.open('save/.graveyard', 'w')
-        characters = file['characters']
-        characters.append((str(player.name),str(player.fighter.level),str(dungeon_level),str(player.fighter.job)))
-        file['characters'] = characters
-        file.close()    
-    except:
-        file = shelve.open('save/.graveyard', 'n')
-        characters = [(str(player.name),str(player.fighter.level),str(dungeon_level),str(player.fighter.job))]
-        file['characters'] = characters
-        file.close()    
 def player_death(player):
     global game_state
     message('You have died!', (127,0,0))
     game_state = 'dead'
     player.img = IMG_DEAD
     player.dlevel = dungeon_level
-    graveyard_append()
+    graveyard.append(player)
 def monster_death(monster):
     message(monster.name.capitalize() + ' was slain', (127,0,0))
     monster.img = IMG_DEAD
@@ -1309,7 +1298,7 @@ def take_turn_player():
 ################################
 #     MAIN GAME MODES HERE     #####################################################################################################
 ################################
-def graveyard():
+def view_graveyard():
     file = shelve.open('save/.graveyard')
     characters = file['characters']
     file.close()
@@ -1399,7 +1388,7 @@ def main_menu():
             elif event.key == pygame.K_q: # Quit game
                 break
             elif event.key == pygame.K_g: # Graveyard
-                try: graveyard()
+                try: view_graveyard()
                 except: x_msgbox(300,30, (123,123,123), 'The Graveyard is empty')
 
 def new_game(testing=False):
