@@ -13,6 +13,7 @@ import random
 
 from ath_cliath.Tile import Tile
 from ath_cliath.Rect import Rect
+from ath_cliath.Map import Map
 
 import ath_cliath.graveyard as graveyard
 
@@ -63,10 +64,7 @@ def xrender_fov():
     global fov_recompute, fov_map
     if fov_recompute:
         fov_recompute = False
-        for x in range(MAP_WIDTH/10):
-            for y in range(MAP_HEIGHT/10):
-                map[x][y].in_fov = False
-
+        map.remove_fov()
 
         fov_range = 10
         for x in range(player.x-(fov_range-1), player.x+fov_range):
@@ -83,11 +81,11 @@ def xrender_fov():
                                 else: x1 = int(player.x+(dx*r)+0.8) # 0.8 is nearly perfect to avoid bugs
                                 if y >= player.y: y1 =  int(player.y+(dy*r))
                                 else: y1 = int(player.y+(dy*r)+0.8) # 0.8 is nearly perfect to avoid bugs
-                                if map[x1][y1].block_sight:
+                                if map[x1, y1].block_sight:
                                     block_next = True
-                                    map[x1][y1].in_fov = True
+                                    map[x1, y1].in_fov = True
                                 else: 
-                                    map[x1][y1].in_fov = True
+                                    map[x1, y1].in_fov = True
 
     """
     xangle, yangle = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -113,13 +111,13 @@ def xrender_fov():
 def xrender_smap():
     for y in range(MAP_HEIGHT/10):
         for x in range(MAP_WIDTH/10):
-            wall = map[x][y].block_sight
-            if map[x][y].in_fov:
+            wall = map[x, y].block_sight
+            if map[x, y].in_fov:
                 if wall: smap.blit(IMG_WALL_LIGHT, (x*10,y*10))
                 else: smap.blit(IMG_FLOOR_LIGHT, (x*10,y*10))
-                map[x][y].explored = True
+                map[x, y].explored = True
             else:
-                if map[x][y].explored:
+                if map[x, y].explored:
                     if wall: smap.blit(IMG_WALL_DARK, (x*10,y*10))
                     else: smap.blit(IMG_FLOOR_DARK, (x*10,y*10))
     for object in objects: 
@@ -494,16 +492,16 @@ def x_spell_throw(sourcexy, targetxy, image):
 def create_room(room):
     for x in range(room.x1 + 1, room.x2):
         for y in range(room.y1 + 1, room.y2):
-            map[x][y].blocked = False
-            map[x][y].block_sight = False
+            map[x, y].blocked = False
+            map[x, y].block_sight = False
 def create_h_tunnel(x1, x2, y): #min() and max() are used in case x1>x2
     for x in range(min(x1, x2), max(x1, x2) + 1):
-        map[x][y].blocked = False
-        map[x][y].block_sight = False
+        map[x, y].blocked = False
+        map[x, y].block_sight = False
 def create_v_tunnel(y1, y2, x): #min() and max() are used in case x1>x2
     for y in range(min(y1, y2), max(y1, y2) + 1):
-        map[x][y].blocked = False
-        map[x][y].block_sight = False
+        map[x, y].blocked = False
+        map[x, y].block_sight = False
 ################################
 #           CLASSES            #####################################################################################################
 ################################
@@ -550,9 +548,9 @@ class Object:
             if not is_blocked(self.x-1, self.y+0): (dx, dy) = (-1, 0)
         self.move(dx, dy)
     def xdraw(self):
-        if map[self.x][self.y].in_fov or (self.always_visible and map[self.x][self.y].explored):
+        if map[self.x, self.y].in_fov or (self.always_visible and map[self.x, self.y].explored):
             if self == stairsup:
-                if map[self.x][self.y].in_fov: smap.blit(self.img[0],(self.x*10,self.y*10))
+                if map[self.x, self.y].in_fov: smap.blit(self.img[0],(self.x*10,self.y*10))
                 else: smap.blit(self.img[1],(self.x*10,self.y*10))
             else:
                 try:
@@ -690,7 +688,7 @@ class BasicMonster():
     def take_turn(self):
         monster = self.owner
         target = closest_enemy(5, monster)
-        if map[monster.x][monster.y].in_fov:
+        if map[monster.x, monster.y].in_fov:
             if target == None: target = player
             (self.chasing_x, self.chasing_y) = (target.x, target.y) #remember where player last was seen
             self.state = 'chasing' #if player has been spotten he will find you
@@ -713,7 +711,7 @@ class MageMonster():
         self.prep_spell = None
     def take_turn(self):
         monster = self.owner
-        if map[monster.x][monster.y].in_fov:
+        if map[monster.x, monster.y].in_fov:
             target = player
             if self.prep_spell is None:
                 self.prep_spell = monster.fighter.spellbook[random.randint(0, len(monster.fighter.spellbook)-1)][0]
@@ -759,7 +757,7 @@ def closest_enemy(max_range, owner=None):
     closest_enemy = None
     closest_dist = max_range + 1
     for object in objects:
-        if object.fighter and not object == owner and map[object.x][object.y].in_fov and is_enemy(owner, object):
+        if object.fighter and not object == owner and map[object.x, object.y].in_fov and is_enemy(owner, object):
             dist = distance((owner.x, owner.y), (object.x, object.y))
             if dist < closest_dist:
                 closest_enemy = object
@@ -770,7 +768,7 @@ def distance(owner_xy, target_xy):
 def dnd_dice(min, max):
     return random.randint(min, max) 
 def is_blocked(x, y):
-    if map[x][y].blocked: return True
+    if map[x, y].blocked: return True
     for object in objects:
         if object.blocks and object.x == x and object.y == y:
             return True
@@ -980,7 +978,7 @@ def player_action_wait():
     else: 
         waiting_turns -= 1
         for object in objects: # Rest Aborted
-            if object.ai and object != player and map[object.x][object.y].in_fov:
+            if object.ai and object != player and map[object.x, object.y].in_fov:
                 message(object.name.capitalize() + ' in sight!')
                 game_state = 'playing'
 def player_action_drop():
@@ -1169,7 +1167,7 @@ def make_map_test():
     objects, rooms, num_rooms = [player], [], 0
     MAX_ROOMS,ROOM_SIZE = 50, (6, 10)
 
-    map = [[ Tile(True) for y in range(MAP_HEIGHT/10) ] for x in range(MAP_WIDTH/10) ]
+    map = Map(MAP_WIDTH/10, MAP_HEIGHT/10)
 
     for r in range(MAX_ROOMS):
         w, h = random.randint(ROOM_SIZE[0], ROOM_SIZE[1]), random.randint(ROOM_SIZE[0], ROOM_SIZE[1])
@@ -1434,7 +1432,6 @@ def play_game():
 AC_empty = Object(0, 0, '', None, True, item=Item(itemtype='all', weight='none', equippable='all', dmg = (1,2,0), ac=0, max_dexmod=100))
 version = 'v0.3.0c'
 turn = 0
-#sys.stdout = open("debug.txt", "w")
 
 INIT_GAME()
 main_menu()
