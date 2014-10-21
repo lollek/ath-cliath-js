@@ -1299,9 +1299,7 @@ def take_turn_player():
 #     MAIN GAME MODES HERE     #####################################################################################################
 ################################
 def view_graveyard():
-    file = shelve.open('save/.graveyard')
-    characters = file['characters']
-    file.close()
+    characters = graveyard.load()
     char_list = sorted(characters, key=lambda char: (char[2], char[1]), reverse=True)
     objects = [' No Name                 CLvl DLvl Class']
     no = 1
