@@ -1111,7 +1111,7 @@ def next_level():
         message('You have escaped the dungeon!', (0,255,0))
         message('Press escape to leave')
         game_state = 'dead'
-        graveyard.append(player)
+        graveyard.save(player)
 def new_player(player_name, player_job):
     global player
     # 1. Statics
@@ -1210,7 +1210,7 @@ def player_death(player):
     game_state = 'dead'
     player.img = IMG_DEAD
     player.dlevel = dungeon_level
-    graveyard.append(player)
+    graveyard.save(player)
 def monster_death(monster):
     message(monster.name.capitalize() + ' was slain', (127,0,0))
     monster.img = IMG_DEAD

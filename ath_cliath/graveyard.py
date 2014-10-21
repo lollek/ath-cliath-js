@@ -1,7 +1,7 @@
 import shelve
 GRAVEYARD_FILEPATH = "save/.graveyard"
 
-def append(player):
+def save(player):
     # Append player to graveyard
 
     data = (str(player.name)
