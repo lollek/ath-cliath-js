@@ -1,7 +1,18 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2
+
 import pygame
 from pygame.locals import *
-import math, textwrap, shelve, re, os, sys, random
+
+import math
+import textwrap
+import shelve
+import re
+import os
+import sys
+import random
+
+from ath_cliath.Tile import Tile
+
 ################################
 #       GRAPHICS / INIT        #####################################################################################################
 ################################
@@ -477,15 +488,6 @@ def x_spell_throw(sourcexy, targetxy, image):
 ################################
 #         MAP BUILDING         #####################################################################################################
 ################################
-class Tile:
-    def __init__(self, blocked, block_sight = None):
-        self.blocked = blocked
-        self.explored = False
-        self.in_fov = False
-        
-        # By default, blocked tile blocks sight
-        if block_sight is None: block_sight = blocked
-        self.block_sight = block_sight
 class Rect:
     def __init__(self, x, y, w, h):
         (self.x1, self.x2) = (x, x + w)
