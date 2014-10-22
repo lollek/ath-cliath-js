@@ -489,11 +489,6 @@ def x_spell_throw(sourcexy, targetxy, image):
 ################################
 #         MAP BUILDING         #####################################################################################################
 ################################
-def create_room(room):
-    for x in range(room.x1 + 1, room.x2):
-        for y in range(room.y1 + 1, room.y2):
-            map[x, y].blocked = False
-            map[x, y].block_sight = False
 def create_h_tunnel(x1, x2, y): #min() and max() are used in case x1>x2
     for x in range(min(x1, x2), max(x1, x2) + 1):
         map[x, y].blocked = False
@@ -1171,7 +1166,7 @@ def make_map_test():
 
     for r in range(MAX_ROOMS):
         w, h = random.randint(ROOM_SIZE[0], ROOM_SIZE[1]), random.randint(ROOM_SIZE[0], ROOM_SIZE[1])
-        x, y = random.randint(0, MAP_WIDTH/10 -w -1), random.randint(0, MAP_HEIGHT/10 -h -2)
+        x, y = random.randint(1, MAP_WIDTH/10 -w), random.randint(1, MAP_HEIGHT/10 -h -1)
         new_room = Rect(x, y, w, h)
 
         failed = False
@@ -1180,7 +1175,7 @@ def make_map_test():
                 failed = True
                 break
         if not failed:
-            create_room(new_room)
+            map.create_room(new_room)
             (new_x, new_y) = new_room.center() #center coordinates of new room, will be useful later
             if num_rooms == 0: #this is the first room, where the player starts at
                 player.x = new_x
