@@ -1297,25 +1297,18 @@ def take_turn_player():
 #     MAIN GAME MODES HERE     #####################################################################################################
 ################################
 def view_graveyard():
-    characters = graveyard.load()
-    char_list = sorted(characters, key=lambda char: (char[2], char[1]), reverse=True)
+    try:
+        characters = graveyard.load(25)
+    except:
+        return x_msgbox(300,30, (123,123,123), 'Unable to load graveyard')
+
     objects = [' No Name                 CLvl DLvl Class']
-    no = 1
-    for char in char_list:
-        if no <= 25: 
-            num = str(no)
-            if len(num) == 1: num = str(no)
-            space, sufspace = '                       ', '  '
-            space1 = space[:(len(space)-len(char[0]))]
-            if char[3] == 'rogue': prespace = '  '
-            elif char[3] == 'fighter': prespace = '    '
-            else: prespace = ' '
-            if len(num) == 2: prespace = prespace[:-1]
-            if len(char[2]) == 2: sufspace = sufspace[:-1]
-            objects.append(prespace+num+' '+str(char[0])+space1+str(char[1])+'    '+str(char[2])+sufspace+str(char[3]))
-            no += 1
-        else: break
-    index = x_menu(400, 'Graveyard', objects,' ', lineclr=(0,0,0))
+    for i, char in enumerate(characters, 1):
+        objects.append("%2d %s%s%2d   %2d  %s" % 
+                (i, char[0], ' ' * (24 - len(char[0])),
+                 char[1], char[2], char[3]))
+    x_menu(400, 'Graveyard', objects,' ', lineclr=(0,0,0))
+
 def save_game():
     #open a new empty shelve (possibly overwriting an old one) to write the game data
     x_flushIMG()
@@ -1384,8 +1377,8 @@ def main_menu():
             elif event.key == pygame.K_q: # Quit game
                 break
             elif event.key == pygame.K_g: # Graveyard
-                try: view_graveyard()
-                except: x_msgbox(300,30, (123,123,123), 'The Graveyard is empty')
+                view_graveyard()
+                
 
 def new_game(testing=False):
     global game_msgs, game_state, dungeon_level

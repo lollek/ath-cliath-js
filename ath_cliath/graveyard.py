@@ -1,23 +1,37 @@
 import shelve
+import os
+import os.path
+
 GRAVEYARD_FILEPATH = "save/.graveyard"
+GRAVEYARD_KEY = "characters"
 
 def save(player):
     # Append player to graveyard
 
     data = (str(player.name)
-           ,str(player.fighter.level)
-           ,str(player.dlevel)
+           ,player.fighter.level
+           ,player.dlevel
            ,str(player.fighter.job)
            )
 
-    file = shelve.open(GRAVEYARD_FILEPATH, 'w')
-    file["characters"].append(data)
+    file = shelve.open(GRAVEYARD_FILEPATH)
+    if file.has_key(GRAVEYARD_KEY):
+        data = file[GRAVEYARD_KEY] + data
+    else:
+        characters = [data]
+
+    file[GRAVEYARD_KEY] = characters
     file.close()
 
-def load():
-    # Load players from graveyard
+def load(items):
+    # Load the top n players from graveyard, the list is sorted by score
+
+    if not os.path.isfile(GRAVEYARD_FILEPATH):
+        return []
 
     file = shelve.open(GRAVEYARD_FILEPATH)
     data = file["characters"]
     file.close()
-    return data
+
+    data.sort(key=lambda elem: (elem[2], elem[1]), reverse=True)
+    return data[:items]
