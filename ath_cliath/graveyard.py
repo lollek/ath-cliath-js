@@ -8,19 +8,17 @@ GRAVEYARD_KEY = "characters"
 def save(player):
     # Append player to graveyard
 
-    data = (str(player.name)
+    data = [(str(player.name)
            ,player.fighter.level
            ,player.dlevel
            ,str(player.fighter.job)
-           )
+           )]
 
     file = shelve.open(GRAVEYARD_FILEPATH)
     if file.has_key(GRAVEYARD_KEY):
         data = file[GRAVEYARD_KEY] + data
-    else:
-        characters = [data]
 
-    file[GRAVEYARD_KEY] = characters
+    file[GRAVEYARD_KEY] = data
     file.close()
 
 def load(items):
