@@ -18,6 +18,17 @@ class Map:
                self.map[x + y * self.width].blocked = False
                self.map[x + y * self.width].block_sight = False
 
+    def create_horizontal_tunnel(self, x1, x2, y):
+        # Carve out a horizontal tunnel
+        for x in range(min(x1, x2), max(x1, x2) +1):
+            self.map[x + y * self.width].blocked = False
+            self.map[x + y * self.width].block_sight = False
+
+    def create_vertical_tunnel(self, y1, y2, x):
+        # Carve out a vertical tunnel
+        for y in range(min(y1, y2), max(y1, y2) +1):
+            self.map[x + y * self.width].blocked = False
+            self.map[x + y * self.width].block_sight = False
 
     def remove_fov(self):
         # Make all tiles in map non-visible
