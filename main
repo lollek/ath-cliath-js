@@ -60,6 +60,7 @@ def xgraphics():
     if fov_recompute:
         fov_recompute = False
         graphics.render_field_of_view(map, player, 10)
+
     xrender_smap()
     xrender_leftbar()
     xrender_rightbar()
@@ -67,17 +68,7 @@ def xgraphics():
     pygame.display.update()
 
 def xrender_smap():
-    for y in range(MAP_HEIGHT/10):
-        for x in range(MAP_WIDTH/10):
-            wall = map[x, y].block_sight
-            if map[x, y].in_fov:
-                if wall: smap.blit(IMG_WALL_LIGHT, (x*10,y*10))
-                else: smap.blit(IMG_FLOOR_LIGHT, (x*10,y*10))
-                map[x, y].explored = True
-            else:
-                if map[x, y].explored:
-                    if wall: smap.blit(IMG_WALL_DARK, (x*10,y*10))
-                    else: smap.blit(IMG_FLOOR_DARK, (x*10,y*10))
+    graphics.render_map_background(smap, map)
     for object in objects: 
         if object.blocks == False: object.xdraw()
     for object in objects:
@@ -250,10 +241,6 @@ def x_loadIMG(status):
 def x_loadIMG_dlvl1(status):
     global IMG_FLOOR_DARK, IMG_FLOOR_LIGHT, IMG_WALL_DARK, IMG_WALL_LIGHT
     global IMG_GOBLIN, IMG_KOBOLD_B, IMG_KOBOLD_R, IMG_SNAKE, IMG_BOSS
-
-    # Tiles first
-    IMG_FLOOR_DARK, IMG_FLOOR_LIGHT = pygame.image.load('img/lv1/ground_dark.png'),pygame.image.load('img/lv1/ground_light.png')
-    IMG_WALL_DARK, IMG_WALL_LIGHT   = pygame.image.load('img/lv1/wall_dark.png'),pygame.image.load('img/lv1/wall_light.png')
 
     # Goblin
     IMG_GOBLIN1 = pygame.image.load('img/lv1/goblin.png')
