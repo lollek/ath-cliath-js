@@ -15,6 +15,7 @@ from ath_cliath.Tile import Tile
 from ath_cliath.Rect import Rect
 from ath_cliath.Map import Map
 
+import ath_cliath.graphics as graphics
 import ath_cliath.graveyard as graveyard
 
 ################################
@@ -54,60 +55,17 @@ def INIT_GAME():
 
 ##########/GRAPHICS MAJ/*##########
 def xgraphics():
-    xrender_fov()
+    global fov_recompute
+
+    if fov_recompute:
+        fov_recompute = False
+        graphics.render_field_of_view(map, player, 10)
     xrender_smap()
     xrender_leftbar()
     xrender_rightbar()
     xrender_panel()
     pygame.display.update()
-def xrender_fov():
-    global fov_recompute, fov_map
-    if fov_recompute:
-        fov_recompute = False
-        map.remove_fov()
 
-        fov_range = 10
-        for x in range(player.x-(fov_range-1), player.x+fov_range):
-            for y in range(player.y-(fov_range-1), player.y+fov_range):
-                if 0 < x < MAP_WIDTH/10 and 0 < y < MAP_HEIGHT/10:
-                    distance = (math.sqrt((x-player.x) ** 2 + (y-player.y) ** 2))
-                    if int(distance) in range(fov_range):
-                        if int(distance) > 0: dx, dy = (x-player.x)/distance, (y-player.y)/distance
-                        else: dx, dy = (x-player.x), (y-player.y)
-                        block_next = False
-                        for r in range(fov_range):
-                            if not block_next:
-                                if x >= player.x: x1 = int(player.x+(dx*r))
-                                else: x1 = int(player.x+(dx*r)+0.8) # 0.8 is nearly perfect to avoid bugs
-                                if y >= player.y: y1 =  int(player.y+(dy*r))
-                                else: y1 = int(player.y+(dy*r)+0.8) # 0.8 is nearly perfect to avoid bugs
-                                if map[x1, y1].block_sight:
-                                    block_next = True
-                                    map[x1, y1].in_fov = True
-                                else: 
-                                    map[x1, y1].in_fov = True
-
-    """
-    xangle, yangle = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
-    for x in xangle:
-        for y in yangle:
-            block_next = False
-            for r in range(10):
-                if not block_next:
-                    tmpx,tmpy = int(player.x+x*r), int(player.y+y*r)
-                    if map[tmpx][tmpy].block_sight:
-                        block_next = True
-                        map[tmpx][tmpy].in_fov = True
-                    else: map[tmpx][tmpy].in_fov = True
-            block_next = False
-            for r in range(10):
-                if not block_next:
-                    tmpx,tmpy = int(player.x-x*r), int(player.y+y*r)
-                    if map[tmpx][tmpy].block_sight:
-                        block_next = True
-                        map[tmpx][tmpy].in_fov = True
-                    else: map[tmpx][tmpy].in_fov = True
-                    """
 def xrender_smap():
     for y in range(MAP_HEIGHT/10):
         for x in range(MAP_WIDTH/10):
