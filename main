@@ -18,15 +18,6 @@ from ath_cliath.Map import Map
 import ath_cliath.graphics as graphics
 import ath_cliath.graveyard as graveyard
 
-def INIT_GAME():
-    global smap, leftbar, panel, rightbar
-
-    # Create game surfaces
-    smap = pygame.Surface((MAP_WIDTH, MAP_HEIGHT)).convert()
-    leftbar = pygame.Surface((LEFTBAR_WIDTH,LEFTBAR_HEIGHT)).convert()
-    panel = pygame.Surface((MON_WIDTH,PANEL_HEIGHT)).convert()
-    rightbar = pygame.Surface((RIGHTBAR_WIDTH,RIGHTBAR_HEIGHT)).convert()
-
 ##########/GRAPHICS MAJ/*##########
 def xgraphics():
     global fov_recompute
@@ -1353,5 +1344,10 @@ if __name__ == "__main__":
     version = 'v0.3.0c'
     turn = 0
 
-    INIT_GAME()
+    # Create game surfaces
+    smap = pygame.Surface((MAP_WIDTH, MAP_HEIGHT)).convert()
+    leftbar = pygame.Surface((LEFTBAR_WIDTH,LEFTBAR_HEIGHT)).convert()
+    panel = pygame.Surface((MON_WIDTH,PANEL_HEIGHT)).convert()
+    rightbar = pygame.Surface((RIGHTBAR_WIDTH,RIGHTBAR_HEIGHT)).convert()
+
     main_menu()
