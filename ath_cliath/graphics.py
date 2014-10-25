@@ -32,24 +32,26 @@ def render_field_of_view(map, player, fov_range):
             if map[x1, y1].block_sight:
                 break
 
-def render_map_background(surface, map, storage=[]):
-
+def load_image(image_name, _storage={}):
     # Lazy loading images. TODO: Implement a better system for storing images
-    if not storage:
-        dark_floor = pygame.image.load('img/lv1/ground_dark.png')
-        light_floor = pygame.image.load('img/lv1/ground_light.png')
-        dark_wall = pygame.image.load('img/lv1/wall_dark.png')
-        light_wall = pygame.image.load('img/lv1/wall_light.png')
-        storage = [dark_floor, light_floor, dark_wall, light_wall]
-    else:
-        dark_floor, light_floor, dark_wall, light_wall = storage
+    if not _storage:
+        _storage["dark_floor"] = pygame.image.load('img/lv1/ground_dark.png')
+        _storage["light_floor"] = pygame.image.load('img/lv1/ground_light.png')
+        _storage["dark_wall"] = pygame.image.load('img/lv1/wall_dark.png')
+        _storage["light_wall"] = pygame.image.load('img/lv1/wall_light.png')
+    return _storage[image_name]
 
+def render_map_background(surface, map):
+    # Draw the whole map background to a surface
     for x in range(map.width):
         for y in range(map.height):
-            if map[x, y].in_fov:
-                surface.blit(light_wall if map[x,y].block_sight else
-                             light_floor, (x * 10, y * 10))
-                map[x,y].explored = True
-            elif map[x, y].explored:
-                surface.blit(dark_wall if map[x,y].block_sight else
-                             dark_floor, (x * 10, y * 10))
+            render_map_tile(surface, map[x, y], x, y)
+
+def render_map_tile(surface, tile, x, y):
+    # Draw a tile to a surface
+    if tile.in_fov:
+        surface.blit(load_image("light_wall") if tile.block_sight else
+                     load_image("light_floor"), (x * 10, y * 10))
+    elif tile.explored:
+        surface.blit(load_image("dark_wall") if tile.block_sight else
+                     load_image("dark_floor"), (x * 10, y * 10))
