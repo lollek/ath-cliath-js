@@ -18,32 +18,6 @@ from ath_cliath.Map import Map
 import ath_cliath.graphics as graphics
 import ath_cliath.graveyard as graveyard
 
-################################
-#       GRAPHICS / INIT        #####################################################################################################
-################################
-# Surface sizes:
-MON_WIDTH, MON_HEIGHT = 1360, 760
-MAP_WIDTH, MAP_HEIGHT = 1000, 1000 
-LEFTBAR_WIDTH, LEFTBAR_HEIGHT = 200, MON_HEIGHT 
-PANEL_WIDTH, PANEL_HEIGHT =     MON_WIDTH, 160
-RIGHTBAR_WIDTH, RIGHTBAR_HEIGHT=MON_WIDTH-LEFTBAR_WIDTH-700,MON_HEIGHT-PANEL_HEIGHT
-
-# Predef colors:
-BACKGROUND_COLOR = (0, 0, 0)
-INFO_COLOR = (100,100,100)
-INFO_COLOR2 = (200,200,200)
-MAGIC_COLOR = (0,255,255)
-
-# Init pygame, font and caption and main surfaces
-pygame.init()
-if pygame.font: 
-    font12 = pygame.font.SysFont('monospace',12, bold=True)
-    font15 = pygame.font.SysFont('monospace',15, bold=True)
-    font20 = pygame.font.SysFont('monospace',20, bold=True)
-pygame.display.set_caption('Ath Cliath')
-mon = pygame.display.set_mode((MON_WIDTH, MON_HEIGHT)) 
-con = pygame.Surface((MON_WIDTH, MON_HEIGHT))
-
 def INIT_GAME():
     global smap, leftbar, panel, rightbar
 
@@ -79,9 +53,9 @@ def xrender_smap():
         except:break
     BX, BY, BW, BH = player.x-35, player.y-30, 70, 60
     if player.x < 35: BX = 0
-    elif player.x > MAP_WIDTH/10-35: BX = MAP_WIDTH/10-70
+    elif player.x > map.width -35: BX = map.width -70
     if player.y < 30: BY = 0
-    elif player.y > MAP_HEIGHT/10-30: BY = MAP_HEIGHT/10-60
+    elif player.y > map.height -30: BY = map.height -60
 
     mon.blit(smap, (0+LEFTBAR_WIDTH, 0), (BX*10,BY*10,BW*10,BH*10))
     smap.fill(BACKGROUND_COLOR)
@@ -303,7 +277,8 @@ def x_msgbox(w, h, fill_clr, text, x=None, y=None, fontsize=12):
     pygame.display.update()
 
     event = pygame.event.wait()
-def x_textbox(w, h, options, fillclr=(123,123,123), lineclr=(0,0,0), x=None, y=None, fontsize=12, surface=mon):
+def x_textbox(w, h, options, fillclr=(123,123,123), lineclr=(0,0,0), x=None, y=None, fontsize=12, surface=None):
+    if surface is None: surface = mon
     if x == None: x = MON_WIDTH/2-w/2
     if y == None: y = MON_HEIGHT/2-h/2
     window = pygame.Surface((w,h)).convert()
@@ -409,9 +384,9 @@ def x_spell_throw(sourcexy, targetxy, image):
 
     BX, BY, BW, BH = player.x-35, player.y-30, 70, 60
     if player.x < 35: BX = 0
-    elif player.x > MAP_WIDTH/10-35: BX = MAP_WIDTH/10-70
+    elif player.x > map.width -35: BX = map.width -70
     if player.y < 30: BY = 0
-    elif player.y > MAP_HEIGHT/10-30: BY = MAP_HEIGHT/10-60
+    elif player.y > map.height -30: BY = map.height -60
 
 
     imgxy = sourcexy
@@ -1099,7 +1074,7 @@ def make_map_test():
 
     for r in range(MAX_ROOMS):
         w, h = random.randint(ROOM_SIZE[0], ROOM_SIZE[1]), random.randint(ROOM_SIZE[0], ROOM_SIZE[1])
-        x, y = random.randint(1, MAP_WIDTH/10 -w), random.randint(1, MAP_HEIGHT/10 -h -1)
+        x, y = random.randint(1, map.width -w), random.randint(1, map.height -h -1)
         new_room = Rect(x, y, w, h)
 
         failed = False
@@ -1349,10 +1324,34 @@ def play_game():
         #print('turn: '+str(turn))
         turn += 1
 
-# List of Defines
-AC_empty = Object(0, 0, '', None, True, item=Item(itemtype='all', weight='none', equippable='all', dmg = (1,2,0), ac=0, max_dexmod=100))
-version = 'v0.3.0c'
-turn = 0
+if __name__ == "__main__":
+    # Surface sizes:
+    MON_WIDTH, MON_HEIGHT = 1360, 760
+    MAP_WIDTH, MAP_HEIGHT = 1000, 1000 
+    LEFTBAR_WIDTH, LEFTBAR_HEIGHT = 200, MON_HEIGHT 
+    PANEL_WIDTH, PANEL_HEIGHT =     MON_WIDTH, 160
+    RIGHTBAR_WIDTH, RIGHTBAR_HEIGHT=MON_WIDTH-LEFTBAR_WIDTH-700,MON_HEIGHT-PANEL_HEIGHT
 
-INIT_GAME()
-main_menu()
+    # Predef colors:
+    BACKGROUND_COLOR = (0, 0, 0)
+    INFO_COLOR = (100,100,100)
+    INFO_COLOR2 = (200,200,200)
+    MAGIC_COLOR = (0,255,255)
+
+    # Init pygame, font and caption and main surfaces
+    pygame.init()
+    if pygame.font: 
+        font12 = pygame.font.SysFont('monospace',12, bold=True)
+        font15 = pygame.font.SysFont('monospace',15, bold=True)
+        font20 = pygame.font.SysFont('monospace',20, bold=True)
+    pygame.display.set_caption('Ath Cliath')
+    mon = pygame.display.set_mode((MON_WIDTH, MON_HEIGHT)) 
+    con = pygame.Surface((MON_WIDTH, MON_HEIGHT))
+
+    # List of Defines
+    AC_empty = Object(0, 0, '', None, True, item=Item(itemtype='all', weight='none', equippable='all', dmg = (1,2,0), ac=0, max_dexmod=100))
+    version = 'v0.3.0c'
+    turn = 0
+
+    INIT_GAME()
+    main_menu()
