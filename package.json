@@ -4,6 +4,7 @@
   "description": "Simple roguelike game",
   "main": "index.js",
   "dependencies": {
+    "elm": "^0.17.0",
     "help": "^3.0.2"
   },
   "devDependencies": {},
