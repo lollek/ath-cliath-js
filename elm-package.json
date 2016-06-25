@@ -1,7 +1,7 @@
 {
     "version": "0.0.0",
     "summary": "Simple roguelike game",
-    "repository": "https://github.com/lollek/Ath-Cliath-JS.git",
+    "repository": "https://github.com/lollek/ath-cliath-js.git",
     "license": "BSD3",
     "source-directories": [
         "src"
