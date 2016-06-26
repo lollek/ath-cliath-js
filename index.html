@@ -3,10 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>ath-cliath-js</title>
+    <style type="text/css">
+        body {
+            background-color: darkslateblue;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: white;
+        }
+    </style>
 </head>
 <body>
     <canvas id="stdscr" tabindex="1"></canvas>
 
-    <script type="text/javascript" href="/js/main.js"></script>
+    <script type="text/javascript" src="/src/main.js"></script>
+    <script type="text/javascript" src="/src/graphics.js"></script>
+    <script type="text/javascript">
+        main();
+    </script>
 </body>
 </html>
