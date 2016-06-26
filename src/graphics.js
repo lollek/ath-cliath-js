@@ -8,10 +8,19 @@ var IO;
     var leftbar_height = canvas_height;
     var botbar_width = canvas_width;
     var botbar_height = 160;
-    var img_menu_background;
+    var font_name = 'monospace';
+    var img_menu_background = null;
     function keypressHook(event) {
     }
-    function init(canvas_) {
+    function drawMainMenu() {
+        context.drawImage(img_menu_background, 0, 0, img_menu_background.width, img_menu_background.height, 0, 0, canvas.width, canvas.height);
+        // Title
+        context.font = '20px ' + font_name;
+        context.textAlign = 'center';
+        context.fillText('Ath Cliath', canvas_width / 2, 100);
+    }
+    IO.drawMainMenu = drawMainMenu;
+    function init(canvas_, fn) {
         canvas = canvas_;
         context = canvas.getContext('2d');
         canvas.addEventListener('keypress', keypressHook, false);
@@ -21,7 +30,7 @@ var IO;
         img_menu_background = new Image();
         img_menu_background.src = '/img/BG_IMG2.png';
         img_menu_background.onload = function () {
-            context.drawImage(img_menu_background, 0, 0, img_menu_background.width, img_menu_background.height, 0, 0, canvas.width, canvas.height);
+            fn();
         };
     }
     IO.init = init;

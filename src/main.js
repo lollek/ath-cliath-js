@@ -1,5 +1,12 @@
 ///<reference path="graphics.ts"/>
 function main() {
-    IO.init(document.getElementById("stdscr"));
+}
+function mainMenu() {
+    IO.drawMainMenu();
+}
+function init() {
+    IO.init(document.getElementById("stdscr"), function () {
+        mainMenu();
+    });
 }
 //# sourceMappingURL=main.js.map
