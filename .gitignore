@@ -1,4 +1,7 @@
-# nodejs
+# Typescript
+*.js.map
+
+# NodeJS
 node_modules
 
 # WebStorm
