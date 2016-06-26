@@ -1,2 +1,2 @@
-Console.log("Hello world");
+var user = "test";
 //# sourceMappingURL=main.js.map
