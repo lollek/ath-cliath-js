@@ -1,5 +1,6 @@
 # Typescript
-*.js.map
+*.map
+*.js
 
 # NodeJS
 node_modules
