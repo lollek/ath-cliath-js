@@ -1,7 +1,22 @@
 namespace IO {
-    let canvas: HTMLCanvasElement;
-    let context: CanvasRenderingContext2D;
 
+    /**
+     * Initialize IO for usage.
+     * @param canvas_   The HTMLCanvasElement to use as main screen.
+     */
+    export function init(canvas_: HTMLCanvasElement): void {
+        canvas = canvas_;
+        context = canvas.getContext('2d');
+
+        canvas.addEventListener('keypress', keypressHook, false);
+        canvas.width = canvas_width;
+        canvas.height = canvas_height;
+        canvas.focus();
+
+        context.fillStyle = 'black';
+        context.fillRect(0, 0, canvas_width, canvas_height);
+    }
+    
     const canvas_width: number = 800;
     const canvas_height: number = 600;
 
@@ -15,19 +30,10 @@ namespace IO {
     const font_name: string = 'monospace';
     const font: string = font_size + 'px ' + font_name;
 
-    function keypressHook(event: KeyboardEvent) {
+    let canvas: HTMLCanvasElement;
+    let context: CanvasRenderingContext2D;
+
+    function keypressHook(event: KeyboardEvent): void {
     }
 
-    export function init(canvas_: HTMLCanvasElement) {
-        canvas = canvas_;
-        context = canvas.getContext('2d');
-
-        canvas.addEventListener('keypress', keypressHook, false);
-        canvas.width = canvas_width;
-        canvas.height = canvas_height;
-        canvas.focus();
-
-        context.fillStyle = 'black';
-        context.fillRect(0, 0, canvas_width, canvas_height);
-    }
 }
