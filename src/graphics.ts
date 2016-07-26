@@ -1,38 +1,24 @@
 namespace IO {
-    var canvas;
-    var context;
+    let canvas: HTMLCanvasElement;
+    let context: CanvasRenderingContext2D;
 
-    const canvas_width = 800;
-    const canvas_height = 600;
+    const canvas_width: number = 800;
+    const canvas_height: number = 600;
 
-    const leftbar_width = 200;
-    const leftbar_height = canvas_height;
+    const leftbar_width: number = 200;
+    const leftbar_height: number = canvas_height;
 
-    const botbar_width = canvas_width;
-    const botbar_height = 160;
-    
-    const font_name = 'monospace';
+    const botbar_width: number = canvas_width;
+    const botbar_height: number = 160;
 
-    var img_menu_background = null;
+    const font_size: number = 20;
+    const font_name: string = 'monospace';
+    const font: string = font_size + 'px ' + font_name;
 
-    function keypressHook(event) {
-
+    function keypressHook(event: KeyboardEvent) {
     }
 
-    export function drawMainMenu() {
-        context.drawImage(img_menu_background,
-            0, 0, img_menu_background.width, img_menu_background.height,
-            0, 0, canvas.width, canvas.height);
-
-        // Title
-        context.font = '20px ' + font_name;
-        context.textAlign = 'center';
-        context.fillText('Ath Cliath', canvas_width / 2, 100);
-
-
-    }
-    
-    export function init(canvas_: HTMLCanvasElement, fn : Function) {
+    export function init(canvas_: HTMLCanvasElement) {
         canvas = canvas_;
         context = canvas.getContext('2d');
 
@@ -41,10 +27,7 @@ namespace IO {
         canvas.height = canvas_height;
         canvas.focus();
 
-        img_menu_background = new Image();
-        img_menu_background.src = '/img/BG_IMG2.png';
-        img_menu_background.onload = function () {
-            fn();
-        };
+        context.fillStyle = 'black';
+        context.fillRect(0, 0, canvas_width, canvas_height);
     }
 }

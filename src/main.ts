@@ -1,14 +1,18 @@
 ///<reference path="graphics.ts"/>
+///<reference path="dungeon.ts"/>
 
 function main() {
 }
 
-function mainMenu() {
-   IO.drawMainMenu(); 
+function newGame() {
+    Dungeon.newLevel();
+}
+
+function playGame() {
 }
 
 function init() {
-    IO.init(<HTMLCanvasElement>document.getElementById("stdscr"), function () {
-        mainMenu();
-    });
+    IO.init(<HTMLCanvasElement>document.getElementById('stdscr'));
+    newGame();
+    playGame();
 }
