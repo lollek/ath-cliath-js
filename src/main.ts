@@ -6,6 +6,7 @@ function main(): void {
 
 function newGame(): void {
     Dungeon.newLevel();
+    IO.drawMap(Dungeon.map, Dungeon.width, Dungeon.height);
 }
 
 function playGame(): void {

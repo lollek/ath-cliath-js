@@ -1,6 +1,16 @@
 ///<reference path="tile.ts"/>
 
 namespace Dungeon {
+    export const width: number = 100;
+    export const height: number = 100;
+    export let map: Array<Tile>;
+
+    const dungeon_rooms_max: number = 50;
+    const dungeon_room_min_size: number = 6;
+    const dungeon_room_max_size: number = 10;
+
+    let level: number = 0;
+
 
     /**
      * Remove everything in the current dungeon level and create a new one.
@@ -9,8 +19,8 @@ namespace Dungeon {
         ++level;
 
         map = new Array<Tile>();
-        for (let i: number = 0; i < dungeon_width; ++i) {
-            for (let j: number = 0; j < dungeon_height; ++j) {
+        for (let i: number = 0; i < width; ++i) {
+            for (let j: number = 0; j < height; ++j) {
                 map.push(new Tile(TileType.Wall));
             }
         }
@@ -30,15 +40,6 @@ namespace Dungeon {
             this.height = height;
         }
     }
-
-    const dungeon_width: number = 100;
-    const dungeon_height: number = 100;
-    const dungeon_rooms_max: number = 50;
-    const dungeon_room_min_size: number = 6;
-    const dungeon_room_max_size: number = 10;
-
-    let level: number = 0;
-    let map: Array<Tile>;
 
     /**
      * Make several attempts to add rooms to the current map. Any number of rooms [0-max] may end up begin added.
@@ -62,8 +63,8 @@ namespace Dungeon {
     function tryCreateRoom(previous_room: Coordinate): Coordinate {
         const additional: number = dungeon_room_max_size - dungeon_room_min_size;
         const room: Coordinate =
-            new Coordinate(Math.floor(Math.random() * dungeon_width),
-                           Math.floor(Math.random() * dungeon_height),
+            new Coordinate(Math.floor(Math.random() * width),
+                           Math.floor(Math.random() * height),
                            Math.floor(Math.random() * additional) + dungeon_room_min_size,
                            Math.floor(Math.random() * additional) + dungeon_room_min_size);
 
@@ -73,8 +74,8 @@ namespace Dungeon {
                 const this_x: number = room.x + x;
                 const this_y: number = room.y + y;
 
-                if (this_x >= dungeon_width || this_y >= dungeon_height ||
-                    map[(room.y + y) * dungeon_width + room.x + x].type != TileType.Wall) {
+                if (this_x >= width || this_y >= height ||
+                    map[(room.y + y) * width + room.x + x].type != TileType.Wall) {
                     return null;
                 }
             }
@@ -83,60 +84,61 @@ namespace Dungeon {
         // Make it floor
         for (let x: number = 0; x < room.width; ++x) {
             for (let y: number = 0; y < room.height; ++y) {
-                map[(room.y + y) * dungeon_width + room.x + x].type = TileType.Floor;
+                map[(room.y + y) * width + room.x + x].type = TileType.Floor;
             }
         }
 
         // Connect it to previous room
         if (previous_room != null) {
+            const from_x: number = Math.floor(Math.random() * room.width) + room.x;
+            const from_y: number = Math.floor(Math.random() * room.height) + room.y;
+            const to_x: number = Math.floor(Math.random() * previous_room.width) + previous_room.x;
+            const to_y: number = Math.floor(Math.random() * previous_room.height) + previous_room.y;
+
             if (Math.floor(Math.random() * 2) == 1) {
-                createTunnelHorizontal(room, previous_room);
+                createTunnelHorizontal(from_x, to_x, from_y);
+                createTunnelVertical(from_y, to_y, to_x);
             } else {
-                createTunnelVertical(room, previous_room);
+                createTunnelVertical(from_y, to_y, from_x);
+                createTunnelHorizontal(from_x, to_x, to_y);
             }
         }
         return room;
     }
 
     /**
-     * Create a horizontal tunnel from one coordinate in the direction of another
-     * @param from  Location to start from.
-     * @param to    Location to dig towards.
+     * Create a horizontal tunnel from one coordinate to another
+     * @param from_x    x coordinate to start digging from
+     * @param to_x      x coordinate to stop digging (inclusive)
+     * @param from_y    y coordinate to dig in
      */
-    function createTunnelHorizontal(from: Coordinate, to: Coordinate): void {
-        const from_y: number = Math.floor(Math.random() * from.height) + from.y;
-        let from_x: number = Math.floor(Math.random() * from.width) + from.x;
-        let to_x: number = Math.floor(Math.random() * to.width) + to.x;
-
+    function createTunnelHorizontal(from_x: number, to_x: number, from_y: number): void {
         if (from_x > to_x) {
             let tmp_x: number = from_x;
             from_x = to_x;
             to_x = tmp_x;
         }
 
-        for (let x: number = from_x; x < to_x; ++x) {
-            map[from_y * dungeon_width + x].type = TileType.Floor;
+        for (let x: number = from_x; x <= to_x; ++x) {
+            map[from_y * width + x].type = TileType.Floor;
         }
     }
 
     /**
      * Create a vertical tunnel from one coordinate in the direction of another
-     * @param from  Location to start from.
-     * @param to    Location to dig towards.
+     * @param from_y    y coordinate to start digging from
+     * @param to_y      y coordinate to stop digging at (inclusive)
+     * @param from_x    x coordinate to dig in
      */
-    function createTunnelVertical(from: Coordinate, to: Coordinate): void {
-        const from_x: number = Math.floor(Math.random() * from.width) + from.x;
-        let from_y: number = Math.floor(Math.random() * from.height) + from.y;
-        let to_y: number = Math.floor(Math.random() * to.height) + to.y;
-
+    function createTunnelVertical(from_y: number, to_y: number, from_x: number): void {
         if (from_y > to_y) {
             let tmp_y: number = from_y;
             from_y = to_y;
             to_y = tmp_y;
         }
 
-        for (let y: number = from_y; y < to_y; ++y) {
-            map[y * dungeon_width + from_x].type = TileType.Floor;
+        for (let y: number = from_y; y <= to_y; ++y) {
+            map[y * width + from_x].type = TileType.Floor;
         }
     }
 }
