@@ -126,7 +126,7 @@ namespace IO {
 
     function keypressHook(event: KeyboardEvent): void {
         switch (event.keyCode) {
-            
+
             // Look in a direction
             case  66: Player.look(-1,  1); break; // B
             case  72: Player.look(-1,  0); break; // H
@@ -201,8 +201,46 @@ namespace IO {
      * @returns     Array of tuples [x, y] where x and y are map coordinates.
      */
     function getTilesInFOV(): Array<[number, number]> {
+        const tiles_to_investigate: Array<[number, number]> = getTilesInPlayerViewDirection();
         let return_data: Array<[number, number]> = [];
 
-        return getTilesInPlayerViewDirection();
+        for (let tile of tiles_to_investigate) {
+            const tile_x: number = tile[0];
+            const tile_y: number = tile[1];
+            const distance: number = Math.sqrt((tile_x - Player.x) ** 2 + (tile_y - Player.y) ** 2);
+            const distance_int: number = Math.floor(distance);
+            const tile_dx: number = (tile_x - Player.x) / distance;
+            const tile_dy: number = (tile_y - Player.y) / distance;
+
+            let is_seen: boolean = true;
+            for (let d: number = 0; d < distance_int; ++d) {
+                const tmp_x: number = Player.x + tile_dx * d;
+                let tmp_x_int: number;
+                if (tmp_x > Player.x) {
+                    tmp_x_int = Math.floor(tmp_x);
+                } else {
+                    tmp_x_int = Math.ceil(tmp_x);
+                }
+
+                const tmp_y: number = Player.y + tile_dy * d;
+                let tmp_y_int: number;
+                if (tmp_y > Player.y) {
+                    tmp_y_int = Math.floor(tmp_y);
+                } else {
+                    tmp_y_int = Math.ceil(tmp_y);
+                }
+
+                if (Dungeon.map[(tmp_y_int * Dungeon.width) + tmp_x_int].type == TileType.Wall) {
+                    is_seen = false;
+                    break;
+                }
+            }
+
+            if (is_seen) {
+                return_data.push([tile_x, tile_y]);
+            }
+        }
+
+        return return_data;
     }
 }
