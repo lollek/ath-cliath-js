@@ -1,3 +1,4 @@
+///<reference path="coordinate.ts"/>
 ///<reference path="dungeon.ts"/>
 ///<reference path="player.ts"/>
 ///<reference path="tile.ts"/>
@@ -7,21 +8,27 @@ namespace IO {
     const tile_size: number = 20;
 
     const canvas_width_px: number = 800;
-    const canvas_width: number = canvas_width_px / tile_size;
-
     const canvas_height_px: number = 600;
-    const canvas_height: number = canvas_height_px / tile_size;
 
+    const leftbar_x_px: number = 0;
+    const leftbar_y_px: number = 0;
     const leftbar_width_px: number = 200;
     const leftbar_height_px: number = canvas_height_px;
 
+    const map_x_px: number = leftbar_x_px + leftbar_width_px;
+    const map_y_px: number = 0;
+    const map_width_px: number = 600;
+    const map_width: number = map_width_px / tile_size;
+    const map_height_px: number = 600;
+    const map_height: number = map_height_px / tile_size;
+
+    const botbar_x_px: number = 0;
+    const botbar_y_px: number = 0;
     const botbar_width_px: number = canvas_width_px;
     const botbar_height_px: number = 160;
 
     const font_size: number = 20;
-    const font_name: string = 'monospace';
-    const font: string = font_size + 'px ' + font_name;
-
+    const font: string = font_size + 'px monospace';
 
     let canvas: HTMLCanvasElement;
     let context: CanvasRenderingContext2D;
@@ -49,27 +56,57 @@ namespace IO {
      * Draw the map, player, monster, items, etc, to the screen
      */
     export function drawEverything(): void {
-        context.fillStyle = 'black';
-        context.fillRect(0, 0, canvas_width_px, canvas_height_px);
+        clearScreen();
         setCameraAccordingToPlayer();
+        drawLeftbar();
         drawMap();
         drawPlayer();
     }
 
+    /**
+     * Blank out all data on the screen
+     */
+    function clearScreen(): void {
+        context.fillStyle = 'black';
+        context.fillRect(0, 0, canvas_width_px, canvas_height_px);
+    }
+
+    /**
+     * Set camera variables so they are correct relative to player position
+     */
     function setCameraAccordingToPlayer(): void {
-        camera_x = Player.x - (canvas_width / 2);
+        camera_x = Player.x - (map_width / 2);
         if (camera_x < 0) {
             camera_x = 0;
-        } else if (camera_x >= Dungeon.width - canvas_width) {
-            camera_x = Dungeon.width - canvas_width;
+        } else if (camera_x >= Dungeon.width - map_width) {
+            camera_x = Dungeon.width - map_width;
         }
 
-        camera_y = Player.y - (canvas_height / 2);
-        if (camera_y < 0) {
+        camera_y = Player.y - (map_height / 2);
+        if (camera_y < 1) {
             camera_y = 0;
-        } else if (camera_y >= Dungeon.height - canvas_height) {
-            camera_y = Dungeon.height - canvas_height;
+        } else if (camera_y >= Dungeon.height - map_height) {
+            camera_y = Dungeon.height - map_height;
         }
+    }
+
+    /**
+     * Draw the bar on the left side of the screen
+     */
+    function drawLeftbar(): void {
+        context.fillStyle = 'white';
+        context.font = '15px monospace';
+        context.fillText(' Human', leftbar_x_px, leftbar_y_px + font_size);
+        context.fillText(' Adventurer', leftbar_x_px, leftbar_y_px + font_size * 2);
+
+        context.fillText(' AttrA : ', leftbar_x_px, leftbar_y_px + font_size * 4);
+        context.fillText(' AttrB : ', leftbar_x_px, leftbar_y_px + font_size * 5);
+        context.fillText(' AttrC : ', leftbar_x_px, leftbar_y_px + font_size * 6);
+        context.fillText(' AttrD : ', leftbar_x_px, leftbar_y_px + font_size * 7);
+        context.fillText(' AttrE : ', leftbar_x_px, leftbar_y_px + font_size * 8);
+        context.fillText(' AttrF : ', leftbar_x_px, leftbar_y_px + font_size * 9);
+
+        context.fillText(' Depth : ' + Dungeon.level * 50 + 'ft.', leftbar_x_px, leftbar_y_px + font_size * 25);
     }
 
     /**
@@ -77,10 +114,21 @@ namespace IO {
      */
     function drawMap(): void {
         for (let tile of getTilesInFOV()) {
-            let x: number = tile[0];
-            let y: number = tile[1];
-            drawTile(Dungeon.map[y * Dungeon.width + x], x, y);
+            if (tile.x == Dungeon.stairs.x && tile.y == Dungeon.stairs.y) {
+                drawStairsDown(tile.x, tile.y);
+            } else {
+                drawTile(Dungeon.map[tile.y * Dungeon.width + tile.x], tile.x, tile.y);
+            }
         }
+    }
+
+    /**
+     * Draw stairs going down.
+     * @param x     x coordinate of the stairs.
+     * @param y     y coordinate of the stairs.
+     */
+    function drawStairsDown(x: number, y: number): void {
+        drawCharAsTile('>', x, y, 'peru');
     }
 
     /**
@@ -101,10 +149,10 @@ namespace IO {
      */
     function drawCharAsTile(char: string, x: number, y: number, fill_style: string='white'): void {
         context.fillStyle = 'black';
-        context.fillRect((x - camera_x) * tile_size, (y - camera_y) * tile_size, tile_size, tile_size);
+        context.fillRect(map_x_px + ((x - camera_x) * tile_size), map_y_px + ((y - camera_y) * tile_size), tile_size, tile_size);
         context.fillStyle = fill_style;
         context.font = font;
-        context.fillText(char, (x - camera_x) * tile_size, (y - camera_y + 1) * tile_size);
+        context.fillText(char, map_x_px + ((x - camera_x) * tile_size), map_y_px + ((y - camera_y + 1) * tile_size));
     }
 
     /**
@@ -116,14 +164,18 @@ namespace IO {
     function drawTile(tile: Tile, x: number, y: number): void {
         switch(tile.type) {
             case TileType.Floor:
-                drawCharAsTile('.', x, y);
+                drawCharAsTile('.', x, y, 'peru');
                 break;
             case TileType.Wall:
-                drawCharAsTile('#', x, y);
+                drawCharAsTile('#', x, y, 'grey');
                 break;
         }
     }
 
+    /**
+     * Handle keyboard input events
+     * @param event     Keyboard input received
+     */
     function keypressHook(event: KeyboardEvent): void {
         switch (event.keyCode) {
 
@@ -157,51 +209,51 @@ namespace IO {
     /**
      * Return all tiles in the direction the player is looking
      */
-    function getTilesInPlayerViewDirection(): Array<[number, number]> {
-        let return_data: Array<[number, number]> = [];
+    function getTilesInPlayerViewDirection(): Array<Coordinate> {
+        let return_data: Array<Coordinate> = [];
 
         if (Player.looking_direction[0] < 0) {
-            for (let y: number = camera_y; y < camera_y + canvas_height; ++y) {
-                return_data.push([camera_x, y]);
+            for (let y: number = camera_y; y < camera_y + map_height; ++y) {
+                return_data.push(new Coordinate(camera_x, y));
             }
             if (Player.looking_direction[1] == 0) {
                 for (let x: number = camera_x; x < Player.x + 1; ++x) {
-                    return_data.push([x, camera_y]);
-                    return_data.push([x, camera_y + canvas_height - 1]);
+                    return_data.push(new Coordinate(x, camera_y));
+                    return_data.push(new Coordinate(x, camera_y + map_height - 1));
                 }
             }
 
         } else if (Player.looking_direction[0] > 0) {
-            for (let y: number = camera_y; y < camera_y + canvas_height; ++y) {
-                return_data.push([camera_x + canvas_width - 1, y]);
+            for (let y: number = camera_y; y < camera_y + map_height; ++y) {
+                return_data.push(new Coordinate(camera_x + map_width - 1, y));
             }
             if (Player.looking_direction[1] == 0) {
-                for (let x: number = Player.x; x < camera_x + canvas_width; ++x) {
-                    return_data.push([x, camera_y]);
-                    return_data.push([x, camera_y + canvas_height - 1]);
+                for (let x: number = Player.x; x < camera_x + map_width; ++x) {
+                    return_data.push(new Coordinate(x, camera_y));
+                    return_data.push(new Coordinate(x, camera_y + map_height - 1));
                 }
             }
         }
 
         if (Player.looking_direction[1] < 0) {
-            for (let x: number = camera_x; x < camera_x + canvas_width; ++x) {
-                return_data.push([x, camera_y]);
+            for (let x: number = camera_x; x < camera_x + map_width; ++x) {
+                return_data.push(new Coordinate(x, camera_y));
             }
             if (Player.looking_direction[0] == 0) {
                 for (let y: number = camera_y; y < Player.y + 1; ++y) {
-                    return_data.push([camera_x, y]);
-                    return_data.push([camera_x + canvas_width - 1, y]);
+                    return_data.push(new Coordinate(camera_x, y));
+                    return_data.push(new Coordinate(camera_x + map_width - 1, y));
                 }
             }
 
         } else if (Player.looking_direction[1] > 0) {
-            for (let x: number = camera_x; x < camera_x + canvas_width; ++x) {
-                return_data.push([x, camera_y + canvas_height - 1]);
+            for (let x: number = camera_x; x < camera_x + map_width; ++x) {
+                return_data.push(new Coordinate(x, camera_y + map_height - 1));
             }
             if (Player.looking_direction[0] == 0) {
-                for (let y: number = Player.y; y < camera_y + canvas_height; ++y) {
-                    return_data.push([camera_x, y]);
-                    return_data.push([camera_x + canvas_width - 1, y]);
+                for (let y: number = Player.y; y < camera_y + map_height; ++y) {
+                    return_data.push(new Coordinate(camera_x, y));
+                    return_data.push(new Coordinate(camera_x + map_width - 1, y));
                 }
             }
         }
@@ -213,41 +265,38 @@ namespace IO {
      * Calculate Field-Of-View relative to the player, and return the tile we are expected to draw to the screen.
      * @returns     Array of tuples [x, y] where x and y are map coordinates.
      */
-    function getTilesInFOV(): Array<[number, number]> {
-        const tiles_to_investigate: Array<[number, number]> = getTilesInPlayerViewDirection();
-        let return_data: Array<[number, number]> = [];
+    function getTilesInFOV(): Array<Coordinate> {
+        const tiles_to_investigate: Array<Coordinate> = getTilesInPlayerViewDirection();
+        let return_data: Array<Coordinate> = [];
         let return_data_info = [];
 
         for (let tile of tiles_to_investigate) {
-            const tile_x: number = tile[0];
-            const tile_y: number = tile[1];
-            const distance: number = Math.sqrt((tile_x - Player.x) ** 2 + (tile_y - Player.y) ** 2);
+            const distance: number = Math.sqrt((tile.x - Player.x) ** 2 + (tile.y - Player.y) ** 2);
             const distance_int: number = Math.floor(distance);
-            const tile_dx: number = (tile_x - Player.x) / distance;
-            const tile_dy: number = (tile_y - Player.y) / distance;
+            const tile_dx: number = (tile.x - Player.x) / distance;
+            const tile_dy: number = (tile.y - Player.y) / distance;
 
             for (let d: number = 0; d < distance_int; ++d) {
-                let tmp_x: number = Player.x + tile_dx * d;
-                if (tmp_x > Player.x) {
-                    tmp_x = Math.floor(tmp_x);
+                let tmp: Coordinate = new Coordinate(Player.x + tile_dx * d, Player.y + tile_dy * d);
+                if (tmp.x > Player.x) {
+                    tmp.x = Math.floor(tmp.x);
                 } else {
-                    tmp_x = Math.ceil(tmp_x);
+                    tmp.x = Math.ceil(tmp.x);
                 }
 
-                let tmp_y: number = Player.y + tile_dy * d;
-                if (tmp_y > Player.y) {
-                    tmp_y = Math.floor(tmp_y);
+                if (tmp.y > Player.y) {
+                    tmp.y = Math.floor(tmp.y);
                 } else {
-                    tmp_y = Math.ceil(tmp_y);
+                    tmp.y = Math.ceil(tmp.y);
                 }
 
-                let index: string = tmp_x + ' ' + tmp_y;
+                let index: string = tmp.x + ' ' + tmp.y;
                 if (return_data_info[index] == undefined) {
                     return_data_info[index] = true;
-                    return_data.push([tmp_x, tmp_y]);
+                    return_data.push(tmp);
                 }
 
-                if (Dungeon.map[(tmp_y * Dungeon.width) + tmp_x].type != TileType.Floor) {
+                if (Dungeon.map[(tmp.y * Dungeon.width) + tmp.x].type != TileType.Floor) {
                     break;
                 }
             }

@@ -1,16 +1,17 @@
+///<reference path="coordinate.ts"/>
+///<reference path="room.ts"/>
 ///<reference path="tile.ts"/>
 
 namespace Dungeon {
     export const width: number = 100;
     export const height: number = 100;
     export let map: Array<Tile>;
+    export let level: number = 0;
+    export let stairs: Coordinate;
 
     const dungeon_rooms_max: number = 50;
     const dungeon_room_min_size: number = 6;
     const dungeon_room_max_size: number = 10;
-
-    let level: number = 0;
-
 
     /**
      * Remove everything in the current dungeon level and create a new one.
@@ -24,35 +25,27 @@ namespace Dungeon {
                 map.push(new Tile(TileType.Wall));
             }
         }
-        tryCreateRooms(dungeon_rooms_max);
-    }
 
-    class Coordinate {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
+        let last_room: Room = tryCreateRooms(dungeon_rooms_max);
+        stairs = new Coordinate(Math.floor(Math.random() * last_room.width) + last_room.x,
+                                Math.floor(Math.random() * last_room.height) + last_room.y);
 
-        constructor(x: number, y: number, width: number, height: number) {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-        }
     }
 
     /**
      * Make several attempts to add rooms to the current map. Any number of rooms [0-max] may end up begin added.
      * @param max       The number of rooms to potentially add.
+     * @returns         The last of the created rooms.
      */
-    function tryCreateRooms(max: number): void {
-        let previous_room: Coordinate = null;
+    function tryCreateRooms(max: number): Room {
+        let previous_room: Room = null;
         for (let i: number = 0; i < max; ++i) {
-            let potential_previous_room: Coordinate = tryCreateRoom(previous_room);
+            let potential_previous_room: Room = tryCreateRoom(previous_room);
             if (potential_previous_room != null) {
                 previous_room = potential_previous_room
             }
         }
+        return previous_room;
     }
 
     /**
@@ -60,10 +53,10 @@ namespace Dungeon {
      * @previous_room   The [x, y, width, height] of the previous room, or null.
      * @returns         The coordinate of the created room [x, y, width, height], or null.
      */
-    function tryCreateRoom(previous_room: Coordinate): Coordinate {
+    function tryCreateRoom(previous_room: Room): Room {
         const additional: number = dungeon_room_max_size - dungeon_room_min_size;
-        const room: Coordinate =
-            new Coordinate(Math.floor(Math.random() * width),
+        const room: Room =
+            new Room(Math.floor(Math.random() * width),
                            Math.floor(Math.random() * height),
                            Math.floor(Math.random() * additional) + dungeon_room_min_size,
                            Math.floor(Math.random() * additional) + dungeon_room_min_size);

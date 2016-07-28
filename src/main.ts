@@ -1,5 +1,5 @@
 ///<reference path="dungeon.ts"/>
-///<reference path="graphics.ts"/>
+///<reference path="io.ts"/>
 ///<reference path="player.ts"/>
 
 function main(): void {
