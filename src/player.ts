@@ -48,4 +48,13 @@ namespace Player {
         y = target_y;
         return true;
     }
+
+    /**
+     * Look in a direction
+     * @param dx    delta x to look towards
+     * @param dy    delta y to look towards
+     */
+    export function look(dx: number, dy: number): void {
+        looking_direction = [dx, dy];
+    }
 }

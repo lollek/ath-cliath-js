@@ -126,30 +126,27 @@ namespace IO {
 
     function keypressHook(event: KeyboardEvent): void {
         switch (event.keyCode) {
-            case  98: // b
-                Player.move(-1, 1);
-                break;
-            case 104: // h
-                Player.move(-1, 0);
-                break;
-            case 106: // j
-                Player.move(0, 1);
-                break;
-            case 107: // k
-                Player.move(0, -1);
-                break;
-            case 108: // l
-                Player.move(1, 0);
-                break;
-            case 110: // n
-                Player.move(1, 1);
-                break;
-            case 117: // u
-                Player.move(1, -1);
-                break;
-            case 121: // y
-                Player.move(-1, -1);
-                break;
+            
+            // Look in a direction
+            case  66: Player.look(-1,  1); break; // B
+            case  72: Player.look(-1,  0); break; // H
+            case  74: Player.look( 0,  1); break; // J
+            case  75: Player.look( 0, -1); break; // K
+            case  76: Player.look( 1,  0); break; // L
+            case  78: Player.look( 1,  1); break; // N
+            case  85: Player.look( 1, -1); break; // U
+            case  89: Player.look(-1, -1); break; // Y
+
+            // Move in a direction
+            case  98: Player.move(-1,  1); break; // b
+            case 104: Player.move(-1,  0); break; // h
+            case 106: Player.move( 0,  1); break; // j
+            case 107: Player.move( 0, -1); break; // k
+            case 108: Player.move( 1,  0); break; // l
+            case 110: Player.move( 1,  1); break; // n
+            case 117: Player.move( 1, -1); break; // u
+            case 121: Player.move(-1, -1); break; // y
+
             default:
                 console.log(event.keyCode);
                 return;
