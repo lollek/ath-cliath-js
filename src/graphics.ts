@@ -160,36 +160,49 @@ namespace IO {
     function getTilesInPlayerViewDirection(): Array<[number, number]> {
         let return_data: Array<[number, number]> = [];
 
-        let start_x: number = 0;
-        let stop_x: number = 0;
-        let start_y: number = 0;
-        let stop_y: number = 0;
+        if (Player.looking_direction[0] < 0) {
+            for (let y: number = camera_y; y < camera_y + canvas_height; ++y) {
+                return_data.push([camera_x, y]);
+            }
+            if (Player.looking_direction[1] == 0) {
+                for (let x: number = camera_x; x < Player.x + 1; ++x) {
+                    return_data.push([x, camera_y]);
+                    return_data.push([x, camera_y + canvas_height - 1]);
+                }
+            }
 
-        if (Player.looking_direction[0] > 0) {
-            start_x = Player.x;
-            stop_x = camera_x + canvas_width;
-        } else if (Player.looking_direction[0] < 0) {
-            start_x = camera_x;
-            stop_x = Player.x;
-        } else {
-            start_x = camera_x;
-            stop_x = camera_x + canvas_width;
+        } else if (Player.looking_direction[0] > 0) {
+            for (let y: number = camera_y; y < camera_y + canvas_height; ++y) {
+                return_data.push([camera_x + canvas_width - 1, y]);
+            }
+            if (Player.looking_direction[1] == 0) {
+                for (let x: number = Player.x; x < camera_x + canvas_width; ++x) {
+                    return_data.push([x, camera_y]);
+                    return_data.push([x, camera_y + canvas_height - 1]);
+                }
+            }
         }
 
-        if (Player.looking_direction[1] > 0) {
-            start_y = Player.y;
-            stop_y = camera_y + canvas_height;
-        } else if (Player.looking_direction[1] < 0) {
-            start_y = camera_y;
-            stop_y = Player.y;
-        } else {
-            start_y = camera_y;
-            stop_y = camera_y + canvas_height;
-        }
+        if (Player.looking_direction[1] < 0) {
+            for (let x: number = camera_x; x < camera_x + canvas_width; ++x) {
+                return_data.push([x, camera_y]);
+            }
+            if (Player.looking_direction[0] == 0) {
+                for (let y: number = camera_y; y < Player.y + 1; ++y) {
+                    return_data.push([camera_x, y]);
+                    return_data.push([camera_x + canvas_width - 1, y]);
+                }
+            }
 
-        for (let x: number = start_x; x < stop_x; ++x) {
-            for (let y: number = start_y; y < stop_y; ++y) {
-                return_data.push([x, y]);
+        } else if (Player.looking_direction[1] > 0) {
+            for (let x: number = camera_x; x < camera_x + canvas_width; ++x) {
+                return_data.push([x, camera_y + canvas_height - 1]);
+            }
+            if (Player.looking_direction[0] == 0) {
+                for (let y: number = Player.y; y < camera_y + canvas_height; ++y) {
+                    return_data.push([camera_x, y]);
+                    return_data.push([camera_x + canvas_width - 1, y]);
+                }
             }
         }
 
@@ -203,6 +216,7 @@ namespace IO {
     function getTilesInFOV(): Array<[number, number]> {
         const tiles_to_investigate: Array<[number, number]> = getTilesInPlayerViewDirection();
         let return_data: Array<[number, number]> = [];
+        let return_data_info = [];
 
         for (let tile of tiles_to_investigate) {
             const tile_x: number = tile[0];
@@ -212,35 +226,32 @@ namespace IO {
             const tile_dx: number = (tile_x - Player.x) / distance;
             const tile_dy: number = (tile_y - Player.y) / distance;
 
-            let is_seen: boolean = true;
             for (let d: number = 0; d < distance_int; ++d) {
-                const tmp_x: number = Player.x + tile_dx * d;
-                let tmp_x_int: number;
+                let tmp_x: number = Player.x + tile_dx * d;
                 if (tmp_x > Player.x) {
-                    tmp_x_int = Math.floor(tmp_x);
+                    tmp_x = Math.floor(tmp_x);
                 } else {
-                    tmp_x_int = Math.ceil(tmp_x);
+                    tmp_x = Math.ceil(tmp_x);
                 }
 
-                const tmp_y: number = Player.y + tile_dy * d;
-                let tmp_y_int: number;
+                let tmp_y: number = Player.y + tile_dy * d;
                 if (tmp_y > Player.y) {
-                    tmp_y_int = Math.floor(tmp_y);
+                    tmp_y = Math.floor(tmp_y);
                 } else {
-                    tmp_y_int = Math.ceil(tmp_y);
+                    tmp_y = Math.ceil(tmp_y);
                 }
 
-                if (Dungeon.map[(tmp_y_int * Dungeon.width) + tmp_x_int].type == TileType.Wall) {
-                    is_seen = false;
+                let index: string = tmp_x + ' ' + tmp_y;
+                if (return_data_info[index] == undefined) {
+                    return_data_info[index] = true;
+                    return_data.push([tmp_x, tmp_y]);
+                }
+
+                if (Dungeon.map[(tmp_y * Dungeon.width) + tmp_x].type != TileType.Floor) {
                     break;
                 }
             }
-
-            if (is_seen) {
-                return_data.push([tile_x, tile_y]);
-            }
         }
-
         return return_data;
     }
 }

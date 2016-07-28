@@ -12,6 +12,7 @@ namespace Player {
      * Initialize the player, making it ready for playing the game
      */
     export function init(): void {
+        looking_direction = [0, -1];
         for (;;) {
             x = Math.floor(Math.random() * Dungeon.width);
             y = Math.floor(Math.random() * Dungeon.height);
