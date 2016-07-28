@@ -1,8 +1,12 @@
 ///<reference path="dungeon.ts"/>
 
 namespace Player {
+    /// X coordinate of the player
     export let x: number = -1;
+    /// Y coordinate of the player
     export let y: number = -1;
+    /// In which direction [x, y] is the player looking?
+    export let looking_direction: [number, number] = [0, 0];
 
     /**
      * Initialize the player, making it ready for playing the game
@@ -34,6 +38,10 @@ namespace Player {
         const target_tile: Tile = Dungeon.map[(target_y * Dungeon.width) + target_x];
         if (target_tile.type != TileType.Floor) {
             return false;
+        }
+
+        if (target_x != x || target_y != y) {
+            looking_direction = [dx, dy];
         }
 
         x = target_x;

@@ -49,6 +49,8 @@ namespace IO {
      * Draw the map, player, monster, items, etc, to the screen
      */
     export function drawEverything(): void {
+        context.fillStyle = 'black';
+        context.fillRect(0, 0, canvas_width_px, canvas_height_px);
         setCameraAccordingToPlayer();
         drawMap();
         drawPlayer();
@@ -74,10 +76,10 @@ namespace IO {
      * Draw the dungeon map to the screen
      */
     function drawMap(): void {
-        for(let x: number = camera_x; x < camera_x + canvas_width; ++x) {
-            for(let y: number = camera_y; y < camera_y + canvas_height; ++y) {
-                drawTile(Dungeon.map[y * Dungeon.width + x], x, y);
-            }
+        for (let tile of getTilesInFOV()) {
+            let x: number = tile[0];
+            let y: number = tile[1];
+            drawTile(Dungeon.map[y * Dungeon.width + x], x, y);
         }
     }
 
@@ -85,9 +87,7 @@ namespace IO {
      * Draw the player to the screen
      */
     function drawPlayer(): void {
-        context.fillStyle = 'red';
-        context.font = font;
-        drawCharAsTile('@', Player.x, Player.y);
+        drawCharAsTile('@', Player.x, Player.y, 'red');
     }
 
     /**
@@ -97,9 +97,14 @@ namespace IO {
      * @char        Char to print
      * @x           x coordinate of the thing to print
      * @y           y coordinate of the thing to print
+     * @fill_style  Fill style for the char to draw
      */
-    function drawCharAsTile(char: string, x: number, y: number): void {
-        context.fillText(char, (x - camera_x) * tile_size + 4, (y - camera_y + 1) * tile_size - 3);
+    function drawCharAsTile(char: string, x: number, y: number, fill_style: string='white'): void {
+        context.fillStyle = 'black';
+        context.fillRect((x - camera_x) * tile_size, (y - camera_y) * tile_size, tile_size, tile_size);
+        context.fillStyle = fill_style;
+        context.font = font;
+        context.fillText(char, (x - camera_x) * tile_size, (y - camera_y + 1) * tile_size);
     }
 
     /**
@@ -111,13 +116,12 @@ namespace IO {
     function drawTile(tile: Tile, x: number, y: number): void {
         switch(tile.type) {
             case TileType.Floor:
-                context.fillStyle = 'white';
+                drawCharAsTile('.', x, y);
                 break;
             case TileType.Wall:
-                context.fillStyle = 'black';
+                drawCharAsTile('#', x, y);
                 break;
         }
-        context.fillRect((x - camera_x) * tile_size, (y - camera_y) * tile_size, tile_size, tile_size);
     }
 
     function keypressHook(event: KeyboardEvent): void {
@@ -151,5 +155,57 @@ namespace IO {
                 return;
         }
         drawEverything();
+    }
+
+    /**
+     * Return all tiles in the direction the player is looking
+     */
+    function getTilesInPlayerViewDirection(): Array<[number, number]> {
+        let return_data: Array<[number, number]> = [];
+
+        let start_x: number = 0;
+        let stop_x: number = 0;
+        let start_y: number = 0;
+        let stop_y: number = 0;
+
+        if (Player.looking_direction[0] > 0) {
+            start_x = Player.x;
+            stop_x = camera_x + canvas_width;
+        } else if (Player.looking_direction[0] < 0) {
+            start_x = camera_x;
+            stop_x = Player.x;
+        } else {
+            start_x = camera_x;
+            stop_x = camera_x + canvas_width;
+        }
+
+        if (Player.looking_direction[1] > 0) {
+            start_y = Player.y;
+            stop_y = camera_y + canvas_height;
+        } else if (Player.looking_direction[1] < 0) {
+            start_y = camera_y;
+            stop_y = Player.y;
+        } else {
+            start_y = camera_y;
+            stop_y = camera_y + canvas_height;
+        }
+
+        for (let x: number = start_x; x < stop_x; ++x) {
+            for (let y: number = start_y; y < stop_y; ++y) {
+                return_data.push([x, y]);
+            }
+        }
+
+        return return_data;
+    }
+
+    /**
+     * Calculate Field-Of-View relative to the player, and return the tile we are expected to draw to the screen.
+     * @returns     Array of tuples [x, y] where x and y are map coordinates.
+     */
+    function getTilesInFOV(): Array<[number, number]> {
+        let return_data: Array<[number, number]> = [];
+
+        return getTilesInPlayerViewDirection();
     }
 }
