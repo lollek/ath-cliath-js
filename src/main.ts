@@ -1,12 +1,14 @@
-///<reference path="graphics.ts"/>
 ///<reference path="dungeon.ts"/>
+///<reference path="graphics.ts"/>
+///<reference path="player.ts"/>
 
 function main(): void {
 }
 
 function newGame(): void {
     Dungeon.newLevel();
-    IO.drawMap(Dungeon.map, Dungeon.width, Dungeon.height);
+    Player.init();
+    IO.drawEverything();
 }
 
 function playGame(): void {
