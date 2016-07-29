@@ -117,7 +117,7 @@ namespace IO {
             if (tile.x == Dungeon.stairs.x && tile.y == Dungeon.stairs.y) {
                 drawStairsDown(tile.x, tile.y);
             } else {
-                drawTile(Dungeon.map[tile.y * Dungeon.width + tile.x], tile.x, tile.y);
+                drawTile(Dungeon.map[(tile.y * Dungeon.width) + tile.x], tile.x, tile.y);
             }
         }
     }
@@ -148,11 +148,22 @@ namespace IO {
      * @fill_style  Fill style for the char to draw
      */
     function drawCharAsTile(char: string, x: number, y: number, fill_style: string='white'): void {
+        const coord : Coordinate = new Coordinate(map_x_px + ((x - camera_x + 1) * tile_size),
+                                                  map_y_px + ((y - camera_y + 1) * tile_size));
+        /*
+         * Write the background.
+         */
         context.fillStyle = 'black';
-        context.fillRect(map_x_px + ((x - camera_x) * tile_size), map_y_px + ((y - camera_y) * tile_size), tile_size, tile_size);
+        context.fillRect(coord.x, coord.y, tile_size, tile_size);
+
+        /*
+         * Write the char.
+         */
+        const text_align_x: number =  3;
+        const text_align_y: number = 17;
         context.fillStyle = fill_style;
         context.font = font;
-        context.fillText(char, map_x_px + ((x - camera_x) * tile_size), map_y_px + ((y - camera_y + 1) * tile_size));
+        context.fillText(char, coord.x + text_align_x, coord.y + text_align_y);
     }
 
     /**
@@ -162,10 +173,14 @@ namespace IO {
      * @param y     y coordinate of given tile
      */
     function drawTile(tile: Tile, x: number, y: number): void {
-        switch(tile.type) {
+        switch(tile.getType()) {
             case TileType.Floor:
-                drawCharAsTile('.', x, y, 'peru');
-                break;
+                switch (tile.getVisualType()) {
+                    case 0: drawCharAsTile(',', x, y, 'peru'); break;
+                    case 1: drawCharAsTile('.', x, y, 'peru'); break;
+                    default: throw 'UnknownVisualStyle';
+                } break;
+
             case TileType.Wall:
                 drawCharAsTile('#', x, y, 'grey');
                 break;
@@ -319,7 +334,7 @@ namespace IO {
                     return_data.push(tmp);
                 }
 
-                if (Dungeon.map[(tmp.y * Dungeon.width) + tmp.x].type != TileType.Floor) {
+                if (!Dungeon.map[(tmp.y * Dungeon.width) + tmp.x].isType(TileType.Floor)) {
                     break;
                 }
             }

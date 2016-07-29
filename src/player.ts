@@ -18,7 +18,7 @@ namespace Player {
             x = Math.floor(Math.random() * Dungeon.width);
             y = Math.floor(Math.random() * Dungeon.height);
 
-            if (Dungeon.map[y * Dungeon.width + x].type == TileType.Floor) {
+            if (Dungeon.map[y * Dungeon.width + x].isType(TileType.Floor)) {
                 break;
             }
         }
@@ -38,7 +38,7 @@ namespace Player {
         }
 
         const target_tile: Tile = Dungeon.map[(target_y * Dungeon.width) + target_x];
-        if (target_tile.type != TileType.Floor) {
+        if (!target_tile.isType(TileType.Floor)) {
             return false;
         }
 

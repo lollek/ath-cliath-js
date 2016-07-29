@@ -54,22 +54,26 @@ namespace Dungeon {
      * @returns         The coordinate of the created room [x, y, width, height], or null.
      */
     function tryCreateRoom(previous_room: Room): Room {
-        const padding: number = 2;
         const additional: number = dungeon_room_max_size - dungeon_room_min_size;
         const room: Room =
-            new Room(Math.floor(Math.random() * (width - padding)) + padding,
-                     Math.floor(Math.random() * (height - padding)) + padding,
+            new Room(Math.floor(Math.random() * width),
+                     Math.floor(Math.random() * height),
                      Math.floor(Math.random() * additional) + dungeon_room_min_size,
                      Math.floor(Math.random() * additional) + dungeon_room_min_size);
 
         // Run a checker first, to see if we overlap any room, or write out of bounds
+        if (room.x <= 1 || room.y + room.height >= Dungeon.height -1 ||
+            room.y <= 1 || room.x + room.width >= Dungeon.width -1) {
+            return null;
+        }
+
         for (let x: number = 0; x < room.width; ++x) {
             for (let y: number = 0; y < room.height; ++y) {
                 const this_x: number = room.x + x;
                 const this_y: number = room.y + y;
 
                 if (this_x >= width || this_y >= height ||
-                    map[(room.y + y) * width + room.x + x].type != TileType.Wall) {
+                    !map[(room.y + y) * width + room.x + x].isType(TileType.Wall)) {
                     return null;
                 }
             }
@@ -78,7 +82,7 @@ namespace Dungeon {
         // Make it floor
         for (let x: number = 0; x < room.width; ++x) {
             for (let y: number = 0; y < room.height; ++y) {
-                map[(room.y + y) * width + room.x + x].type = TileType.Floor;
+                map[(room.y + y) * width + room.x + x].setType(TileType.Floor);
             }
         }
 
@@ -114,7 +118,7 @@ namespace Dungeon {
         }
 
         for (let x: number = from_x; x <= to_x; ++x) {
-            map[from_y * width + x].type = TileType.Floor;
+            map[from_y * width + x].setType(TileType.Floor);
         }
     }
 
@@ -132,7 +136,7 @@ namespace Dungeon {
         }
 
         for (let y: number = from_y; y <= to_y; ++y) {
-            map[y * width + from_x].type = TileType.Floor;
+            map[y * width + from_x].setType(TileType.Floor);
         }
     }
 }
