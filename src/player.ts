@@ -1,3 +1,4 @@
+///<reference path="coordinate.ts"/>
 ///<reference path="dungeon.ts"/>
 
 namespace Player {
@@ -6,13 +7,13 @@ namespace Player {
     /// Y coordinate of the player
     export let y: number = -1;
     /// In which direction [x, y] is the player looking?
-    export let looking_direction: [number, number] = [0, 0];
+    export let looking_direction: Coordinate = new Coordinate(0, 0);
 
     /**
      * Initialize the player, making it ready for playing the game
      */
     export function init(): void {
-        looking_direction = [0, -1];
+        looking_direction = new Coordinate(0, -1);
         for (;;) {
             x = Math.floor(Math.random() * Dungeon.width);
             y = Math.floor(Math.random() * Dungeon.height);
@@ -42,7 +43,7 @@ namespace Player {
         }
 
         if (target_x != x || target_y != y) {
-            looking_direction = [dx, dy];
+            looking_direction = new Coordinate(dx, dy);
         }
 
         x = target_x;
@@ -56,6 +57,6 @@ namespace Player {
      * @param dy    delta y to look towards
      */
     export function look(dx: number, dy: number): void {
-        looking_direction = [dx, dy];
+        looking_direction = new Coordinate(dx, dy);
     }
 }

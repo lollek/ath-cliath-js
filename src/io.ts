@@ -212,48 +212,80 @@ namespace IO {
     function getTilesInPlayerViewDirection(): Array<Coordinate> {
         let return_data: Array<Coordinate> = [];
 
-        if (Player.looking_direction[0] < 0) {
-            for (let y: number = camera_y; y < camera_y + map_height; ++y) {
-                return_data.push(new Coordinate(camera_x, y));
-            }
-            if (Player.looking_direction[1] == 0) {
-                for (let x: number = camera_x; x < Player.x + 1; ++x) {
-                    return_data.push(new Coordinate(x, camera_y));
-                    return_data.push(new Coordinate(x, camera_y + map_height - 1));
+        const left: Coordinate = new Coordinate(-1, 0);
+        const right: Coordinate = new Coordinate(1, 0);
+        const up: Coordinate = new Coordinate(0, -1);
+        const down: Coordinate = new Coordinate(0, 1);
+        const left_up: Coordinate = new Coordinate(-1, -1);
+        const left_down: Coordinate = new Coordinate(-1, 1);
+        const right_up: Coordinate = new Coordinate(1, -1);
+        const right_down: Coordinate = new Coordinate(1, 1);
+
+        if (Player.looking_direction.equals(left)) {
+            for (let x: number = camera_x; x < Player.x + 1; ++x) {
+                for (let y: number = camera_y; y < camera_y + map_height; ++y) {
+                    return_data.push(new Coordinate(x, y));
                 }
             }
 
-        } else if (Player.looking_direction[0] > 0) {
-            for (let y: number = camera_y; y < camera_y + map_height; ++y) {
-                return_data.push(new Coordinate(camera_x + map_width - 1, y));
-            }
-            if (Player.looking_direction[1] == 0) {
-                for (let x: number = Player.x; x < camera_x + map_width; ++x) {
-                    return_data.push(new Coordinate(x, camera_y));
-                    return_data.push(new Coordinate(x, camera_y + map_height - 1));
+        } else if (Player.looking_direction.equals(right)) {
+            for (let x: number = Player.x; x < camera_x + map_width; ++x) {
+                for (let y: number = camera_y; y < camera_y + map_height; ++y) {
+                    return_data.push(new Coordinate(x, y));
                 }
             }
-        }
-
-        if (Player.looking_direction[1] < 0) {
+            
+        } else if (Player.looking_direction.equals(up)) {
             for (let x: number = camera_x; x < camera_x + map_width; ++x) {
-                return_data.push(new Coordinate(x, camera_y));
-            }
-            if (Player.looking_direction[0] == 0) {
                 for (let y: number = camera_y; y < Player.y + 1; ++y) {
-                    return_data.push(new Coordinate(camera_x, y));
-                    return_data.push(new Coordinate(camera_x + map_width - 1, y));
+                    return_data.push(new Coordinate(x, y));
                 }
             }
 
-        } else if (Player.looking_direction[1] > 0) {
+        } else if (Player.looking_direction.equals(down)) {
             for (let x: number = camera_x; x < camera_x + map_width; ++x) {
-                return_data.push(new Coordinate(x, camera_y + map_height - 1));
-            }
-            if (Player.looking_direction[0] == 0) {
                 for (let y: number = Player.y; y < camera_y + map_height; ++y) {
-                    return_data.push(new Coordinate(camera_x, y));
-                    return_data.push(new Coordinate(camera_x + map_width - 1, y));
+                    return_data.push(new Coordinate(x, y));
+                }
+            }
+
+        } else if (Player.looking_direction.equals(left_up)) {
+            for (let x: number = camera_x; x < camera_x + map_width; ++x) {
+                for (let y: number = camera_y; y < camera_y + map_height; ++y) {
+                    if (Player.x + Player.y < x + y) {
+                        break;
+                    }
+                    return_data.push(new Coordinate(x, y));
+                }
+            }
+
+        } else if (Player.looking_direction.equals(right_up)) {
+            for (let x: number = camera_x; x < camera_x + map_width; ++x) {
+                for (let y: number = camera_y; y < camera_y + map_height; ++y) {
+                    if (Player.y - Player.x < y - x) {
+                        break;
+                    }
+                    return_data.push(new Coordinate(x, y));
+                }
+            }
+
+        } else if (Player.looking_direction.equals(right_down)) {
+            for (let x: number = camera_x + map_width; x >= camera_x; --x) {
+                for (let y: number = camera_y + map_height; y >= camera_y; --y) {
+                    if (Player.x + Player.y > x + y) {
+                        break;
+                    }
+                    return_data.push(new Coordinate(x, y));
+                }
+            }
+
+        } else if (Player.looking_direction.equals(left_down)) {
+            for (let x: number = camera_x + map_width; x >= camera_x; --x) {
+                for (let y: number = camera_y + map_height; y >= camera_y; --y) {
+                    if (Player.y - Player.x > y - x) {
+                        break;
+                    }
+                    return_data.push(new Coordinate(x, y));
                 }
             }
         }
