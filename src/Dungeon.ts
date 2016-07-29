@@ -54,12 +54,13 @@ namespace Dungeon {
      * @returns         The coordinate of the created room [x, y, width, height], or null.
      */
     function tryCreateRoom(previous_room: Room): Room {
+        const padding: number = 1;
         const additional: number = dungeon_room_max_size - dungeon_room_min_size;
         const room: Room =
-            new Room(Math.floor(Math.random() * width),
-                           Math.floor(Math.random() * height),
-                           Math.floor(Math.random() * additional) + dungeon_room_min_size,
-                           Math.floor(Math.random() * additional) + dungeon_room_min_size);
+            new Room(Math.floor(Math.random() * (width - padding)) + padding,
+                     Math.floor(Math.random() * (height) - padding) + padding,
+                     Math.floor(Math.random() * additional) + dungeon_room_min_size,
+                     Math.floor(Math.random() * additional) + dungeon_room_min_size);
 
         // Run a checker first, to see if we overlap any room, or write out of bounds
         for (let x: number = 0; x < room.width; ++x) {
