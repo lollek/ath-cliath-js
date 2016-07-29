@@ -309,20 +309,11 @@ namespace IO {
             const tile_dy: number = (tile.y - Player.y) / distance;
 
             for (let d: number = 0; d < distance_int; ++d) {
-                let tmp: Coordinate = new Coordinate(Player.x + tile_dx * d, Player.y + tile_dy * d);
-                if (tmp.x > Player.x) {
-                    tmp.x = Math.floor(tmp.x);
-                } else {
-                    tmp.x = Math.ceil(tmp.x);
-                }
+                let tmp: Coordinate = new Coordinate(Player.x + (tile_dx * d), Player.y + (tile_dy * d));
+                tmp.x = tmp.x > Player.x ? Math.floor(tmp.x) : Math.ceil(tmp.x);
+                tmp.y = tmp.y > Player.y ? Math.floor(tmp.y) : Math.ceil(tmp.y);
 
-                if (tmp.y > Player.y) {
-                    tmp.y = Math.floor(tmp.y);
-                } else {
-                    tmp.y = Math.ceil(tmp.y);
-                }
-
-                let index: string = tmp.x + ' ' + tmp.y;
+                const index: string = tmp.x + ' ' + tmp.y;
                 if (return_data_info[index] == undefined) {
                     return_data_info[index] = true;
                     return_data.push(tmp);
